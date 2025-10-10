@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Servidor de Recuperação de Contexto para Repositórios Git (MCP Server)
 
 Este projeto fornece um servidor de API autocontido em Docker que clona um repositório Git público, o indexa usando modelos de embedding da OpenAI e expõe um endpoint para buscar trechos de código e documentação relevantes para uma pergunta em linguagem natural.
@@ -64,3 +65,6 @@ curl -X POST "http://localhost:8000/retrieve" \
 ---
 
 *Este projeto foi criado em [10 de Outubro de 2025].*
+=======
+# mcp-git-server
+>>>>>>> origin/main
