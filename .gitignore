@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+
+# Pastas geradas pela aplicação
+/repos/
+/chroma_db/
+
+# Arquivos de ambiente (boa prática)
+.env
