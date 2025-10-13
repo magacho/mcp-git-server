@@ -28,7 +28,7 @@ docker run -p 8000:8000 \
   -e OPENAI_API_KEY="sk-SUA_CHAVE_API_DA_OPENAI" \
   -e REPO_URL="[https://github.com/n8n-io/n8n.git](https://github.com/n8n-io/n8n.git)" \
   --name meu-mcp-server \
-  SEU_USUARIO_DOCKERHUB/mcp-retrieval-server:latest
+  flaviomagacho/mcp-git-server:latest
 ```
 
 *Substitua `SEU_USUARIO_DOCKERHUB` pelo seu nome de usuário no Docker Hub.*
