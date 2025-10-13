@@ -1,6 +1,8 @@
 # Use uma imagem base do Python leve
 FROM python:3.11-slim
 
+RUN apt-get update && apt-get install -y git
+
 # Defina o diretório de trabalho dentro do container
 WORKDIR /app
 
