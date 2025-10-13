@@ -13,3 +13,5 @@ venv/
 
 # Arquivos de ambiente (boa prática)
 .env
+
+/keys.txt
