@@ -5,4 +5,4 @@ langchain-openai
 langchain-community
 langchain-text-splitters
 chromadb
-gitpython
+GitPython
