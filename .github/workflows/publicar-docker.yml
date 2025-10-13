@@ -4,9 +4,9 @@ name: Publicar Imagem Docker Automaticamente
 # Gatilhos: Define QUANDO a automação deve rodar.
 on:
   # Roda sempre que houver um push na branch 'main'
-  push:
-    branches:
-      - main
+  # push:
+    # branches:
+    #   - main
   # Roda sempre que uma nova tag de versão (ex: v1.0.0) for criada
     tags:
       - 'v*.*.*'
