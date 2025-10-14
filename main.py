@@ -69,11 +69,20 @@ def startup_event():
         print(f"Base de dados não encontrada para '{REPO_NAME}'. Iniciando indexação...")
         
         print(f"Clonando repositório de {REPO_URL}...")
+        repo_url = os.getenv("REPO_URL")
+
+        # 1. Lê a variável de ambiente REPO_BRANCH. 
+        # 2. Se ela não existir, usa "main" como valor padrão.
+        repo_branch = os.getenv("REPO_BRANCH", "main")
+    
+        # ...
+        # Agora, use a variável 'repo_branch' ao inicializar o loader
         loader = GitLoader(
-            clone_url=REPO_URL,
-            repo_path=REPO_PATH,
-            file_filter=lambda file_path: file_path.endswith((".ts", ".md", ".json", ".js", ".py", ".java", ".go", "Dockerfile"))
+            repo_path="./repo_temp", 
+            clone_url=repo_url,
+            branch=repo_branch # <--- AGORA ESTÁ DINÂMICO!
         )
+
         documents = loader.load()
 
         if not documents:
