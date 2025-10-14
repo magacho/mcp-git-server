@@ -65,22 +65,18 @@ def startup_event():
     
     embeddings = OpenAIEmbeddings()
 
+    # ESTA LÓGICA É O QUE FAZ O VOLUME FUNCIONAR CORRETAMENTE
     if not os.path.exists(DB_PATH):
         print(f"Base de dados não encontrada para '{REPO_NAME}'. Iniciando indexação...")
         
         print(f"Clonando repositório de {REPO_URL}...")
         repo_url = os.getenv("REPO_URL")
-
-        # 1. Lê a variável de ambiente REPO_BRANCH. 
-        # 2. Se ela não existir, usa "main" como valor padrão.
         repo_branch = os.getenv("REPO_BRANCH", "main")
     
-        # ...
-        # Agora, use a variável 'repo_branch' ao inicializar o loader
         loader = GitLoader(
             repo_path="./repo_temp", 
             clone_url=repo_url,
-            branch=repo_branch # <--- AGORA ESTÁ DINÂMICO!
+            branch=repo_branch
         )
 
         documents = loader.load()
@@ -93,49 +89,5 @@ def startup_event():
         chunks = text_splitter.split_documents(documents)
 
         print(f"Criando embeddings e armazenando no ChromaDB para {len(chunks)} pedaços...")
-        vectorstore = Chroma.from_documents(
-            documents=chunks,
-            embedding=embeddings,
-            persist_directory=DB_PATH
-        )
-        print("Indexação concluída.")
-    else:
-        print(f"Carregando base de dados vetorial existente para '{REPO_NAME}'...")
-        vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
-
-    retriever = vectorstore.as_retriever()
-    print(f"Servidor pronto. Repositório '{REPO_NAME}' está carregado e pronto para consultas.")
-
-# --- ENDPOINTS DA API ---
-@app.get("/", summary="Verificação de Status")
-def read_root():
-    """Endpoint para verificar se o servidor está online."""
-    return {"status": f"MCP Server online para o repositório: {REPO_NAME}"}
-
-@app.post("/retrieve", response_model=RetrieveResponse, summary="Busca fragmentos de contexto")
-def retrieve_context(request: RetrieveRequest):
-    """
-    Recebe uma query (pergunta) e retorna os fragmentos de texto mais relevantes
-    encontrados no banco de dados vetorial do repositório.
-    """
-    if not retriever:
-        raise HTTPException(status_code=503, detail="O servidor ainda está inicializando. Tente novamente em alguns segundos.")
-
-    print(f"Recebida busca por: '{request.query}' com top_k={request.top_k}")
-    
-    # Configura o retriever para buscar a quantidade de documentos solicitada
-    retriever.search_kwargs['k'] = request.top_k
-    
-    # Realiza a busca por similaridade
-    relevant_docs = retriever.invoke(request.query)
-
-    # Formata a resposta para ser limpa e estruturada
-    response_fragments = [
-        DocumentFragment(
-            source=doc.metadata.get('source', 'N/A'), 
-            content=doc.page_content
-        ) 
-        for doc in relevant_docs
-    ]
-
-    return RetrieveResponse(query=request.query, fragments=response_fragments)
+        
+        # Inicializa o ChromaDB vazio, que será pre

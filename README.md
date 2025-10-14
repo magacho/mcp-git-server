@@ -25,18 +25,20 @@ Esta é a maneira mais fácil de usar. Não é necessário clonar este repositó
 
 ```bash
 docker run -p 8000:8000 \
-  -e OPENAI_API_KEY="sk-SUA_CHAVE_API_DA_OPENAI" \
-  -e REPO_URL="[https://github.com/n8n-io/n8n.git](https://github.com/n8n-io/n8n.git)" \
-  --name meu-mcp-server \
+  -e OPENAI_API_KEY="SUA_CHAVE_API_SEGURA" \
+  -e REPO_URL="https://github.com/n8n-io/n8n.git" \
+  -e REPO_BRANCH="master" \
+  -v ./mcp_data/chroma_db:/app/chroma_db \
+  --name meu-mcp-server-n8n \
   flaviomagacho/mcp-git-server:latest
 ```
 
-*Substitua `SEU_USUARIO_DOCKERHUB` pelo seu nome de usuário no Docker Hub.*
 
 ### 🔧 Configuração (Variáveis de Ambiente)
 
 -   `OPENAI_API_KEY` (obrigatório): Sua chave secreta da API da OpenAI.
 -   `REPO_URL` (obrigatório): A URL `.git` do repositório público a ser indexado.
+-   `REPO_BRANCH`: A branch quue será clonada para o MCP Server
 
 ### 🔌 Endpoint da API
 
