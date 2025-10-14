@@ -6,4 +6,5 @@ langchain-community
 langchain-text-splitters
 chromadb
 GitPython
-unstructured
+unstructured[md]
+libmagic
