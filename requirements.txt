@@ -7,5 +7,5 @@ langchain-text-splitters
 langchain-chroma
 GitPython
 unstructured[md]
+unstructured[pdf]
 libmagic
-pypdf
