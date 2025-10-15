@@ -4,6 +4,7 @@ from collections import defaultdict
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+import threading
 
 from models import RetrieveRequest, DocumentFragment, RetrieveResponse
 from repo_utils import get_repo_name_from_url, clone_repo
@@ -39,10 +40,8 @@ total_tokens_gerados = 0
 
 server_ready = False  # Flag global
 
-@app.on_event("startup")
-def startup_event():
+def index_repository():
     global vectorstore, retriever, total_tokens_gerados, server_ready
-
     embeddings = OpenAIEmbeddings()
 
     if not os.path.exists(DB_PATH):
@@ -51,7 +50,6 @@ def startup_event():
         print(f"Repositório: {REPO_NAME}")
         print("="*60)
 
-        # --- ETAPA 1: CLONE E CARREGAMENTO ---
         print("\n--- ETAPA 1 de 3: Clonando e Carregando Repositório ---")
         repo_branch = os.getenv("REPO_BRANCH", "main")
         clone_repo(REPO_URL, repo_branch, LOCAL_REPO_PATH)
@@ -62,17 +60,14 @@ def startup_event():
 
         print(f">>> SUCESSO: Etapa 1 concluída.")
 
-        # --- ETAPA 2: DIVISÃO ---
         print("\n--- ETAPA 2 de 3: Dividindo Documentos ---")
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
         chunks = text_splitter.split_documents(documents)
         print(f">>> SUCESSO: Documentos divididos em {len(chunks)} pedaços.")
 
-        # --- CONTAGEM DE TOKENS ---
         total_tokens_gerados = sum(contar_tokens_openai(doc.page_content) for doc in chunks)
         print(f">>> Total estimado de tokens para embeddings: {total_tokens_gerados}")
 
-        # --- ETAPA 3: EMBEDDINGS ---
         print("\n--- ETAPA 3 de 3: Gerando e Armazenando Embeddings ---")
         vectorstore = Chroma(
             persist_directory=DB_PATH,
@@ -109,6 +104,10 @@ def startup_event():
     print(f"Servidor pronto. Repositório '{REPO_NAME}' está carregado e pronto para consultas.")
     server_ready = True
     print(">>> Servidor ACEITANDO conexões HTTP na porta 8000.")
+
+@app.on_event("startup")
+def startup_event():
+    threading.Thread(target=index_repository, daemon=True).start()
 
 @app.get("/", summary="Verificação de Status")
 def read_root():
