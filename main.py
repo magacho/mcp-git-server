@@ -11,6 +11,8 @@ from langchain_community.document_loaders import DirectoryLoader
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from collections import defaultdict
+import tiktoken
 
 # --- CONFIGURAÇÃO A PARTIR DE VARIÁVEIS DE AMBIENTE ---
 REPO_URL = os.environ.get("REPO_URL")
@@ -58,11 +60,30 @@ class RetrieveResponse(BaseModel):
 vectorstore = None
 retriever = None
 
+# Dicionários para relatório de extensões
+extensoes_processadas = defaultdict(int)
+extensoes_descartadas = defaultdict(int)
+
+# Lista de extensões suportadas
+EXTENSOES_SUPORTADAS = [
+    ".md", ".ts", ".js", ".tsx", ".jsx", ".py", ".html", ".css", ".txt"
+]
+
+# Contador global de tokens
+total_tokens_gerados = 0
+
+def contar_tokens_openai(texto: str, model: str = "text-embedding-ada-002") -> int:
+    try:
+        encoding = tiktoken.encoding_for_model(model)
+    except Exception:
+        encoding = tiktoken.get_encoding("cl100k_base")
+    return len(encoding.encode(texto))
+
 # Função auxiliar para carregar documentos de forma robusta e seletiva
 def load_documents_robustly(path: str) -> Iterator[Document]:
     """
     Usa lazy_load para carregar seletivamente os arquivos de código e documentação, 
-    pulando arquivos que possam causar erro.
+    pulando arquivos que possam causar erro. Gera relatório de extensões processadas e descartadas.
     """
     # Define os padrões de arquivos que queremos incluir.
     glob_patterns = [
@@ -79,10 +100,11 @@ def load_documents_robustly(path: str) -> Iterator[Document]:
 
     print("Iniciando carregamento seletivo de arquivos...")
     total_loaded = 0
-    
+    arquivos_verificados = set()
+
+    # Processa arquivos suportados
     for pattern in glob_patterns:
         try:
-            # silent_errors=True faz com que um arquivo que falhe não pare todo o processo.
             loader = DirectoryLoader(
                 path, 
                 glob=pattern, 
@@ -93,21 +115,50 @@ def load_documents_robustly(path: str) -> Iterator[Document]:
             )
             for doc in loader.lazy_load():
                 total_loaded += 1
+                ext = os.path.splitext(doc.metadata.get("source", ""))[1].lower()
+                extensoes_processadas[ext] += 1
+                arquivos_verificados.add(os.path.abspath(doc.metadata.get("source", "")))
                 yield doc
         except Exception as e:
             print(f"AVISO: Ocorreu um erro geral ao processar o padrão '{pattern}': {e}")
             continue
-    
+
+    # Agora, varre todos os arquivos do repositório para identificar os descartados
+    for root, _, files in os.walk(path):
+        for fname in files:
+            full_path = os.path.abspath(os.path.join(root, fname))
+            if full_path in arquivos_verificados:
+                continue
+            ext = os.path.splitext(fname)[1].lower()
+            if ext not in EXTENSOES_SUPORTADAS:
+                extensoes_descartadas[ext] += 1
+
     print(f"Carregamento seletivo concluído. Total de documentos carregados: {total_loaded}")
 
+def gerar_relatorio_extensoes():
+    print("\n===== RELATÓRIO DE EXTENSÕES DE ARQUIVO =====")
+    print("Processados:")
+    if extensoes_processadas:
+        for ext, count in sorted(extensoes_processadas.items(), key=lambda x: -x[1]):
+            print(f"  {ext or '[sem extensão]'}: {count}")
+    else:
+        print("  Nenhum arquivo processado.")
+
+    print("\nDescartados:")
+    if extensoes_descartadas:
+        for ext, count in sorted(extensoes_descartadas.items(), key=lambda x: -x[1]):
+            print(f"  {ext or '[sem extensão]'}: {count}")
+    else:
+        print("  Nenhum arquivo descartado.")
+    print("=============================================\n")
 
 @app.on_event("startup")
 def startup_event():
     """
     Função executada na inicialização. Clona e indexa o repositório se ainda não foi feito.
     """
-    global vectorstore, retriever
-    
+    global vectorstore, retriever, total_tokens_gerados
+
     embeddings = OpenAIEmbeddings()
 
     if not os.path.exists(DB_PATH):
@@ -124,7 +175,6 @@ def startup_event():
             repo_branch = os.getenv("REPO_BRANCH", "main")
             print(f"Clonando de: {repo_url} (Branch: {repo_branch})")
             
-            # Usamos --depth 1 para um clone superficial, muito mais rápido
             git_command = ["git", "clone", "--progress", "--depth", "1", "--branch", repo_branch, repo_url, LOCAL_REPO_PATH]
             
             with subprocess.Popen(git_command, stderr=subprocess.PIPE, text=True, bufsize=1) as process:
@@ -149,7 +199,13 @@ def startup_event():
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
         chunks = text_splitter.split_documents(documents)
         print(f">>> SUCESSO: Documentos divididos em {len(chunks)} pedaços.")
-        
+
+        # --- CONTAGEM DE TOKENS ---
+        total_tokens_gerados = 0
+        for doc in chunks:
+            total_tokens_gerados += contar_tokens_openai(doc.page_content)
+        print(f">>> Total estimado de tokens para embeddings: {total_tokens_gerados}")
+
         # --- ETAPA 3: EMBEDDINGS ---
         print("\n--- ETAPA 3 de 3: Gerando e Armazenando Embeddings ---")
         
@@ -176,6 +232,12 @@ def startup_event():
         print("\n" + "="*60)
         print("INDEXAÇÃO CONCLUÍDA COM SUCESSO!")
         print("="*60 + "\n")
+
+        # Gera o relatório de extensões
+        gerar_relatorio_extensoes()
+        print(f"===== RELATÓRIO DE TOKENS =====")
+        print(f"Total estimado de tokens enviados para embeddings: {total_tokens_gerados}")
+        print("="*40)
     else:
         print("\n" + "="*60)
         print(f"Carregando base de dados vetorial existente para '{REPO_NAME}'...")
