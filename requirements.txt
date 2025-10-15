@@ -4,7 +4,7 @@ langchain
 langchain-openai
 langchain-community
 langchain-text-splitters
-chromadb
+langchain-chroma
 GitPython
 unstructured[md]
 libmagic
