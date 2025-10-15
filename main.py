@@ -1,18 +1,15 @@
 import os
-import re
-import subprocess
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Iterator
-from langchain_core.documents import Document
-
-# Importações do LangChain (com Chroma atualizado)
-from langchain_community.document_loaders import DirectoryLoader
+from collections import defaultdict
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from collections import defaultdict
-import tiktoken
+
+from models import RetrieveRequest, DocumentFragment, RetrieveResponse
+from repo_utils import get_repo_name_from_url, clone_repo
+from document_loader import load_documents_robustly, EXTENSOES_SUPORTADAS
+from token_utils import contar_tokens_openai
+from report_utils import gerar_relatorio_extensoes, gerar_relatorio_tokens
 
 # --- CONFIGURAÇÃO A PARTIR DE VARIÁVEIS DE AMBIENTE ---
 REPO_URL = os.environ.get("REPO_URL")
@@ -21,16 +18,6 @@ if not REPO_URL:
 
 if "OPENAI_API_KEY" not in os.environ:
     raise ValueError("A variável de ambiente OPENAI_API_KEY não foi definida.")
-
-# Função para criar um nome de pasta seguro a partir da URL do repo
-def get_repo_name_from_url(url):
-    try:
-        repo_name = url.split('/')[-1]
-        repo_name = re.sub(r'\.git$', '', repo_name)
-        safe_name = re.sub(r'[^a-zA-Z0-9_.-]', '_', repo_name)
-        return safe_name
-    except Exception:
-        return "default_repo"
 
 REPO_NAME = get_repo_name_from_url(REPO_URL)
 LOCAL_REPO_PATH = f"/app/repos/{REPO_NAME}" 
@@ -43,120 +30,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# --- MODELOS DE DADOS PARA A API ---
-class RetrieveRequest(BaseModel):
-    query: str
-    top_k: int = 5 
-
-class DocumentFragment(BaseModel):
-    source: str
-    content: str
-
-class RetrieveResponse(BaseModel):
-    query: str
-    fragments: List[DocumentFragment]
-
-# --- LÓGICA DO SERVIDOR ---
 vectorstore = None
 retriever = None
 
-# Dicionários para relatório de extensões
 extensoes_processadas = defaultdict(int)
 extensoes_descartadas = defaultdict(int)
-
-# Lista de extensões suportadas
-EXTENSOES_SUPORTADAS = [
-    ".md", ".ts", ".js", ".tsx", ".jsx", ".py", ".html", ".css", ".txt"
-]
-
-# Contador global de tokens
 total_tokens_gerados = 0
-
-def contar_tokens_openai(texto: str, model: str = "text-embedding-ada-002") -> int:
-    try:
-        encoding = tiktoken.encoding_for_model(model)
-    except Exception:
-        encoding = tiktoken.get_encoding("cl100k_base")
-    return len(encoding.encode(texto))
-
-# Função auxiliar para carregar documentos de forma robusta e seletiva
-def load_documents_robustly(path: str) -> Iterator[Document]:
-    """
-    Usa lazy_load para carregar seletivamente os arquivos de código e documentação, 
-    pulando arquivos que possam causar erro. Gera relatório de extensões processadas e descartadas.
-    """
-    # Define os padrões de arquivos que queremos incluir.
-    glob_patterns = [
-        "**/*.md",
-        "**/*.ts",
-        "**/*.js",
-        "**/*.tsx",
-        "**/*.jsx",
-        "**/*.py",
-        "**/*.html",
-        "**/*.css",
-        "**/*.txt",
-    ]
-
-    print("Iniciando carregamento seletivo de arquivos...")
-    total_loaded = 0
-    arquivos_verificados = set()
-
-    # Processa arquivos suportados
-    for pattern in glob_patterns:
-        try:
-            loader = DirectoryLoader(
-                path, 
-                glob=pattern, 
-                recursive=True, 
-                show_progress=True, 
-                use_multithreading=True,
-                silent_errors=True 
-            )
-            for doc in loader.lazy_load():
-                total_loaded += 1
-                ext = os.path.splitext(doc.metadata.get("source", ""))[1].lower()
-                extensoes_processadas[ext] += 1
-                arquivos_verificados.add(os.path.abspath(doc.metadata.get("source", "")))
-                yield doc
-        except Exception as e:
-            print(f"AVISO: Ocorreu um erro geral ao processar o padrão '{pattern}': {e}")
-            continue
-
-    # Agora, varre todos os arquivos do repositório para identificar os descartados
-    for root, _, files in os.walk(path):
-        for fname in files:
-            full_path = os.path.abspath(os.path.join(root, fname))
-            if full_path in arquivos_verificados:
-                continue
-            ext = os.path.splitext(fname)[1].lower()
-            if ext not in EXTENSOES_SUPORTADAS:
-                extensoes_descartadas[ext] += 1
-
-    print(f"Carregamento seletivo concluído. Total de documentos carregados: {total_loaded}")
-
-def gerar_relatorio_extensoes():
-    print("\n===== RELATÓRIO DE EXTENSÕES DE ARQUIVO =====")
-    print("Processados:")
-    if extensoes_processadas:
-        for ext, count in sorted(extensoes_processadas.items(), key=lambda x: -x[1]):
-            print(f"  {ext or '[sem extensão]'}: {count}")
-    else:
-        print("  Nenhum arquivo processado.")
-
-    print("\nDescartados:")
-    if extensoes_descartadas:
-        for ext, count in sorted(extensoes_descartadas.items(), key=lambda x: -x[1]):
-            print(f"  {ext or '[sem extensão]'}: {count}")
-    else:
-        print("  Nenhum arquivo descartado.")
-    print("=============================================\n")
 
 @app.on_event("startup")
 def startup_event():
-    """
-    Função executada na inicialização. Clona e indexa o repositório se ainda não foi feito.
-    """
     global vectorstore, retriever, total_tokens_gerados
 
     embeddings = OpenAIEmbeddings()
@@ -169,29 +51,13 @@ def startup_event():
 
         # --- ETAPA 1: CLONE E CARREGAMENTO ---
         print("\n--- ETAPA 1 de 3: Clonando e Carregando Repositório ---")
-        
-        if not os.path.exists(LOCAL_REPO_PATH):
-            repo_url = os.getenv("REPO_URL")
-            repo_branch = os.getenv("REPO_BRANCH", "main")
-            print(f"Clonando de: {repo_url} (Branch: {repo_branch})")
-            
-            git_command = ["git", "clone", "--progress", "--depth", "1", "--branch", repo_branch, repo_url, LOCAL_REPO_PATH]
-            
-            with subprocess.Popen(git_command, stderr=subprocess.PIPE, text=True, bufsize=1) as process:
-                for line in process.stderr:
-                    print(f"  [git] {line.strip()}")
-            
-            if process.returncode != 0:
-                raise Exception(f"Falha ao clonar o repositório. Código de saída: {process.returncode}")
-        else:
-            print(f"Diretório do repositório já existe em {LOCAL_REPO_PATH}. Pulando clone.")
-        
-        # Usa a nova função robusta para carregar os documentos
-        documents = list(load_documents_robustly(LOCAL_REPO_PATH))
+        repo_branch = os.getenv("REPO_BRANCH", "main")
+        clone_repo(REPO_URL, repo_branch, LOCAL_REPO_PATH)
 
+        documents = list(load_documents_robustly(LOCAL_REPO_PATH, extensoes_processadas, extensoes_descartadas))
         if not documents:
-            raise Exception("Nenhum documento foi carregado. Verifique os padrões de arquivo na função load_documents_robustly.")
-        
+            raise Exception("Nenhum documento foi carregado. Verifique os padrões de arquivo.")
+
         print(f">>> SUCESSO: Etapa 1 concluída.")
 
         # --- ETAPA 2: DIVISÃO ---
@@ -201,14 +67,11 @@ def startup_event():
         print(f">>> SUCESSO: Documentos divididos em {len(chunks)} pedaços.")
 
         # --- CONTAGEM DE TOKENS ---
-        total_tokens_gerados = 0
-        for doc in chunks:
-            total_tokens_gerados += contar_tokens_openai(doc.page_content)
+        total_tokens_gerados = sum(contar_tokens_openai(doc.page_content) for doc in chunks)
         print(f">>> Total estimado de tokens para embeddings: {total_tokens_gerados}")
 
         # --- ETAPA 3: EMBEDDINGS ---
         print("\n--- ETAPA 3 de 3: Gerando e Armazenando Embeddings ---")
-        
         vectorstore = Chroma(
             persist_directory=DB_PATH,
             embedding_function=embeddings
@@ -221,23 +84,17 @@ def startup_event():
             batch = chunks[i:i + batch_size]
             current_batch_num = i // batch_size + 1
             total_chars = sum(len(doc.page_content) for doc in batch)
-            
             print(f"  -> Preparando lote {current_batch_num}/{total_batches} ({len(batch)} documentos, ~{total_chars} caracteres)...")
             print("     Enviando para a API da OpenAI e aguardando resposta (pode levar alguns minutos)...")
-            
             vectorstore.add_documents(documents=batch)
-
             print(f"     Lote {current_batch_num} processado com sucesso!")
-        
+
         print("\n" + "="*60)
         print("INDEXAÇÃO CONCLUÍDA COM SUCESSO!")
         print("="*60 + "\n")
 
-        # Gera o relatório de extensões
-        gerar_relatorio_extensoes()
-        print(f"===== RELATÓRIO DE TOKENS =====")
-        print(f"Total estimado de tokens enviados para embeddings: {total_tokens_gerados}")
-        print("="*40)
+        gerar_relatorio_extensoes(extensoes_processadas, extensoes_descartadas)
+        gerar_relatorio_tokens(total_tokens_gerados)
     else:
         print("\n" + "="*60)
         print(f"Carregando base de dados vetorial existente para '{REPO_NAME}'...")
@@ -248,7 +105,6 @@ def startup_event():
     retriever = vectorstore.as_retriever()
     print(f"Servidor pronto. Repositório '{REPO_NAME}' está carregado e pronto para consultas.")
 
-# --- ENDPOINTS DA API ---
 @app.get("/", summary="Verificação de Status")
 def read_root():
     return {"status": f"MCP Server online para o repositório: {REPO_NAME}"}
@@ -259,9 +115,7 @@ def retrieve_context(request: RetrieveRequest):
         raise HTTPException(status_code=503, detail="O servidor ainda está inicializando. Tente novamente em alguns segundos.")
 
     print(f"Recebida busca por: '{request.query}' com top_k={request.top_k}")
-    
     retriever.search_kwargs['k'] = request.top_k
-    
     relevant_docs = retriever.invoke(request.query)
 
     response_fragments = [
