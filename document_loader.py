@@ -2,13 +2,13 @@ import os
 from langchain_community.document_loaders import DirectoryLoader
 
 EXTENSOES_SUPORTADAS = [
-    ".md", ".ts", ".js", ".tsx", ".jsx", ".py", ".html", ".css", ".txt"
+    ".md", ".ts", ".js", ".tsx", ".jsx", ".py", ".html", ".css", ".txt", ".json", ".pdf"
 ]
 
 def load_documents_robustly(path: str, extensoes_processadas, extensoes_descartadas):
     glob_patterns = [
         "**/*.md", "**/*.ts", "**/*.js", "**/*.tsx", "**/*.jsx",
-        "**/*.py", "**/*.html", "**/*.css", "**/*.txt"
+        "**/*.py", "**/*.html", "**/*.css", "**/*.txt", "**/*.json", "**/*.pdf"
     ]
     arquivos_verificados = set()
     for pattern in glob_patterns:

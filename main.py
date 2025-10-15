@@ -37,9 +37,11 @@ extensoes_processadas = defaultdict(int)
 extensoes_descartadas = defaultdict(int)
 total_tokens_gerados = 0
 
+server_ready = False  # Flag global
+
 @app.on_event("startup")
 def startup_event():
-    global vectorstore, retriever, total_tokens_gerados
+    global vectorstore, retriever, total_tokens_gerados, server_ready
 
     embeddings = OpenAIEmbeddings()
 
@@ -101,17 +103,22 @@ def startup_event():
         vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
         print(">>> SUCESSO: Base de dados carregada da memória.")
         print("="*60 + "\n")
+        gerar_relatorio_extensoes(extensoes_processadas, extensoes_descartadas)
 
     retriever = vectorstore.as_retriever()
     print(f"Servidor pronto. Repositório '{REPO_NAME}' está carregado e pronto para consultas.")
+    server_ready = True
+    print(">>> Servidor ACEITANDO conexões HTTP na porta 8000.")
 
 @app.get("/", summary="Verificação de Status")
 def read_root():
+    if not server_ready:
+        return {"status": "Servidor inicializando, aguarde..."}
     return {"status": f"MCP Server online para o repositório: {REPO_NAME}"}
 
 @app.post("/retrieve", response_model=RetrieveResponse, summary="Busca fragmentos de contexto")
 def retrieve_context(request: RetrieveRequest):
-    if not retriever:
+    if not server_ready:
         raise HTTPException(status_code=503, detail="O servidor ainda está inicializando. Tente novamente em alguns segundos.")
 
     print(f"Recebida busca por: '{request.query}' com top_k={request.top_k}")

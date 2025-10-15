@@ -8,3 +8,4 @@ langchain-chroma
 GitPython
 unstructured[md]
 libmagic
+pypdf
