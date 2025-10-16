@@ -142,8 +142,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update CHANGELOG.md
+
+
+      - name: Commit updated CHANGELOG
         run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Switch to main branch first
+          git fetch origin main
+          git checkout main
+          
+          # Regenerate the changelog on main branch
+          PREVIOUS_TAG="${{ steps.previous-tag.outputs.previous_tag }}"
           CURRENT_TAG="${{ steps.current-tag.outputs.current_tag }}"
           
           # Create or update CHANGELOG.md
@@ -166,11 +177,7 @@ jobs:
           } > CHANGELOG_new.md
           
           mv CHANGELOG_new.md CHANGELOG.md
-
-      - name: Commit updated CHANGELOG
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          
           git add CHANGELOG.md
           if git diff --staged --quiet; then
             echo "No changes to commit"
