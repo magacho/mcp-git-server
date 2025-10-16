@@ -5,6 +5,7 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from models import RetrieveRequest, DocumentFragment, RetrieveResponse
 from repo_utils import get_repo_name_from_url, clone_repo
@@ -77,14 +78,27 @@ def index_repository():
         batch_size = 500
         total_batches = (len(chunks) - 1) // batch_size + 1
 
-        for i in range(0, len(chunks), batch_size):
-            batch = chunks[i:i + batch_size]
-            current_batch_num = i // batch_size + 1
-            total_chars = sum(len(doc.page_content) for doc in batch)
-            print(f"  -> Preparando lote {current_batch_num}/{total_batches} ({len(batch)} documentos, ~{total_chars} caracteres)...", flush=True)
+        def send_batch(batch, batch_num, total_batches, total_chars):
+            print(f"  -> Preparando lote {batch_num}/{total_batches} ({len(batch)} documentos, ~{total_chars} caracteres)...", flush=True)
             print("     Enviando para a API da OpenAI e aguardando resposta (pode levar alguns minutos)...", flush=True)
-            vectorstore.add_documents(documents=batch)
-            print(f"     Lote {current_batch_num} processado com sucesso!", flush=True)
+            try:
+                vectorstore.add_documents(documents=batch)
+                print(f"     Lote {batch_num} processado com sucesso!", flush=True)
+                return len(batch)
+            except Exception as e:
+                print(f"     ERRO no lote {batch_num}: {e}", flush=True)
+                return 0
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = []
+            for i in range(0, len(chunks), batch_size):
+                batch = chunks[i:i + batch_size]
+                current_batch_num = i // batch_size + 1
+                total_chars = sum(len(doc.page_content) for doc in batch)
+                futures.append(executor.submit(send_batch, batch, current_batch_num, total_batches, total_chars))
+            for future in as_completed(futures):
+                # O próprio send_batch já faz o print, então aqui pode ser omitido ou usado para controle
+                pass
 
         print("\n" + "="*60, flush=True)
         print("INDEXAÇÃO CONCLUÍDA COM SUCESSO!", flush=True)
