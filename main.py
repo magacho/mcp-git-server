@@ -6,6 +6,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 from models import RetrieveRequest, DocumentFragment, RetrieveResponse
 from repo_utils import get_repo_name_from_url, clone_repo
@@ -75,15 +76,34 @@ def index_repository():
             embedding_function=embeddings
         )
 
-        batch_size = 500
+        batch_size = 350
         total_batches = (len(chunks) - 1) // batch_size + 1
 
+        # Controle de tokens por minuto
+        TOKEN_LIMIT_PER_MINUTE = 1000
+        tokens_this_minute = 0
+        minute_start = time.time()
+
         def send_batch(batch, batch_num, total_batches, total_chars):
+            nonlocal tokens_this_minute, minute_start
+            batch_tokens = sum(contar_tokens_openai(doc.page_content) for doc in batch)
+
+            # Aguarda se passar do limite de tokens por minuto
+            while tokens_this_minute + batch_tokens > TOKEN_LIMIT_PER_MINUTE:
+                elapsed = time.time() - minute_start
+                if elapsed < 60:
+                    wait_time = 60 - elapsed
+                    print(f"     Aguardando {wait_time:.1f}s para respeitar o limite de {TOKEN_LIMIT_PER_MINUTE} tokens/minuto...", flush=True)
+                    time.sleep(wait_time)
+                tokens_this_minute = 0
+                minute_start = time.time()
+
             print(f"  -> Preparando lote {batch_num}/{total_batches} ({len(batch)} documentos, ~{total_chars} caracteres)...", flush=True)
             print("     Enviando para a API da OpenAI e aguardando resposta (pode levar alguns minutos)...", flush=True)
             try:
                 vectorstore.add_documents(documents=batch)
-                print(f"     Lote {batch_num} processado com sucesso!", flush=True)
+                tokens_this_minute += batch_tokens
+                print(f"     Lote {batch_num} processado com sucesso! ({batch_tokens} tokens)", flush=True)
                 return len(batch)
             except Exception as e:
                 print(f"     ERRO no lote {batch_num}: {e}", flush=True)
@@ -97,7 +117,6 @@ def index_repository():
                 total_chars = sum(len(doc.page_content) for doc in batch)
                 futures.append(executor.submit(send_batch, batch, current_batch_num, total_batches, total_chars))
             for future in as_completed(futures):
-                # O próprio send_batch já faz o print, então aqui pode ser omitido ou usado para controle
                 pass
 
         print("\n" + "="*60, flush=True)
