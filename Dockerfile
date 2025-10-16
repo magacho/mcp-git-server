@@ -33,5 +33,9 @@ RUN mkdir -p /app/repos /app/chroma_db
 # Exponha a porta em que a API vai rodar
 EXPOSE 8000
 
+# Configuração padrão para embeddings locais (gratuito)
+ENV EMBEDDING_PROVIDER=sentence-transformers
+ENV TOKEN_COUNT_METHOD=local
+
 # Configurações de produção para uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--access-log"]

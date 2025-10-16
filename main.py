@@ -3,7 +3,6 @@ from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
 from collections import defaultdict
 from langchain_chroma import Chroma
-from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -13,16 +12,18 @@ import asyncio
 from models import RetrieveRequest, DocumentFragment, RetrieveResponse
 from repo_utils import get_repo_name_from_url, clone_repo
 from document_loader import load_documents_robustly, EXTENSOES_SUPORTADAS
-from token_utils import contar_tokens_openai
+from token_utils import contar_tokens, estimar_custo_embeddings
 from report_utils import gerar_relatorio_extensoes, gerar_relatorio_tokens
+from embedding_config import EmbeddingProvider
 
 # --- CONFIGURAÇÃO A PARTIR DE VARIÁVEIS DE AMBIENTE ---
 REPO_URL = os.environ.get("REPO_URL")
 if not REPO_URL:
     raise ValueError("A variável de ambiente REPO_URL não foi definida.")
 
-if "OPENAI_API_KEY" not in os.environ:
-    raise ValueError("A variável de ambiente OPENAI_API_KEY não foi definida.")
+# Configuração flexível de embeddings - padrão local (gratuito)
+EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers")
+TOKEN_COUNT_METHOD = os.getenv("TOKEN_COUNT_METHOD", "local")
 
 REPO_NAME = get_repo_name_from_url(REPO_URL)
 LOCAL_REPO_PATH = f"/app/repos/{REPO_NAME}" 
@@ -55,7 +56,25 @@ server_ready = False  # Flag global
 
 def index_repository():
     global vectorstore, retriever, total_tokens_gerados, server_ready
-    embeddings = OpenAIEmbeddings()
+    
+    # Configurar embeddings baseado na configuração
+    try:
+        embeddings = EmbeddingProvider.get_embeddings(EMBEDDING_PROVIDER)
+        providers_info = EmbeddingProvider.get_available_providers()
+        
+        # Log da configuração escolhida
+        current_provider = EMBEDDING_PROVIDER if EMBEDDING_PROVIDER != "auto" else "auto-detectado"
+        print(f">>> Usando embeddings: {current_provider}", flush=True)
+        
+        if EMBEDDING_PROVIDER in providers_info:
+            info = providers_info[EMBEDDING_PROVIDER]
+            if info.get("available"):
+                print(f">>> Custo: {info.get('cost', 'N/A')}, Qualidade: {info.get('quality', 'N/A')}", flush=True)
+    
+    except Exception as e:
+        print(f"Erro ao configurar embeddings: {e}", flush=True)
+        print("Tentando fallback para sentence-transformers...", flush=True)
+        embeddings = EmbeddingProvider.get_embeddings("sentence-transformers")
 
     if not os.path.exists(DB_PATH):
         print("\n" + "="*60, flush=True)
@@ -78,8 +97,14 @@ def index_repository():
         chunks = text_splitter.split_documents(documents)
         print(f">>> SUCESSO: Documentos divididos em {len(chunks)} pedaços.", flush=True)
 
-        total_tokens_gerados = sum(contar_tokens_openai(doc.page_content) for doc in chunks)
-        print(f">>> Total estimado de tokens para embeddings: {total_tokens_gerados}", flush=True)
+        # Contagem eficiente de tokens
+        print(">>> Calculando tokens...", flush=True)
+        total_tokens_gerados = sum(contar_tokens(doc.page_content, TOKEN_COUNT_METHOD) for doc in chunks)
+        
+        # Estimativa de custo
+        custo_info = estimar_custo_embeddings(total_tokens_gerados, EMBEDDING_PROVIDER)
+        print(f">>> Total estimado de tokens: {total_tokens_gerados}", flush=True)
+        print(f">>> Custo estimado: {custo_info}", flush=True)
 
         print("\n--- ETAPA 3 de 3: Gerando e Armazenando Embeddings ---", flush=True)
         vectorstore = Chroma(
@@ -97,7 +122,7 @@ def index_repository():
 
         def send_batch(batch, batch_num, total_batches, total_chars):
             nonlocal tokens_this_minute, minute_start
-            batch_tokens = sum(contar_tokens_openai(doc.page_content) for doc in batch)
+            batch_tokens = sum(contar_tokens(doc.page_content, "local") for doc in batch)
 
             # Aguarda se passar do limite de tokens por minuto
             while tokens_this_minute + batch_tokens > TOKEN_LIMIT_PER_MINUTE:
@@ -165,6 +190,17 @@ def health_check():
         "status": "healthy" if server_ready else "initializing",
         "repository": REPO_NAME,
         "ready": server_ready
+    }
+
+@app.get("/embedding-info", summary="Informações sobre Embeddings")
+def embedding_info():
+    """Retorna informações sobre os provedores de embedding disponíveis"""
+    providers = EmbeddingProvider.get_available_providers()
+    return {
+        "current_provider": EMBEDDING_PROVIDER,
+        "token_count_method": TOKEN_COUNT_METHOD,
+        "available_providers": providers,
+        "total_tokens_processed": total_tokens_gerados if server_ready else 0
     }
 
 @app.post("/retrieve", response_model=RetrieveResponse, summary="Busca fragmentos de contexto")

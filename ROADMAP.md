@@ -300,6 +300,37 @@ POST /import
 
 ---
 
+## ✅ Concluído
+
+### v0.1.0 - Release Estável com Embeddings Locais 🎉
+- ✅ **Embeddings locais por padrão** - Funciona sem chaves de API
+- ✅ **Configuração simplificada** - Um único container via docker run
+- ✅ **Suporte flexível** - Local (gratuito) ou OpenAI (pago)
+- ✅ **Endpoints de monitoramento** - /health, /embedding-info
+- ✅ **Estimativa de custos** em tempo real
+- ✅ **Documentação completa** - Guias claros de uso
+- ✅ **Arquitetura limpa** - Sem docker-compose, apenas Dockerfile
+
+### v0.0.25 - Embeddings Locais e Otimizações
+- ✅ Suporte a embeddings locais (Sentence Transformers, HuggingFace)
+- ✅ Sistema flexível de provedores de embedding
+- ✅ Contagem de tokens otimizada (local vs tiktoken)
+- ✅ Estimativa de custos para diferentes provedores
+- ✅ Modernização para FastAPI com lifespan context manager
+- ✅ Docker otimizado com usuário não-root
+
+### v0.0.24 - Otimização de Rate Limiting
+- ✅ Implementado controle de tokens por minuto (TPM)
+- ✅ Melhorado sistema de batching para respeitar limites da API
+- ✅ Logs mais informativos sobre o progresso do processamento
+
+### v0.0.23 - Controle de Rate Limiting  
+- ✅ Adicionado limite de tokens para evitar exceder quotas da OpenAI
+- ✅ Sistema de batching inteligente para processamento de documentos
+- ✅ Monitoramento de uso de tokens em tempo real
+
+---
+
 ## 🤝 Como Contribuir
 
 Se você quer implementar alguma dessas funcionalidades:
