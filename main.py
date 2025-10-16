@@ -45,12 +45,12 @@ def index_repository():
     embeddings = OpenAIEmbeddings()
 
     if not os.path.exists(DB_PATH):
-        print("\n" + "="*60)
-        print("INICIANDO PROCESSO DE INDEXAÇÃO (PRIMEIRA EXECUÇÃO)")
-        print(f"Repositório: {REPO_NAME}")
-        print("="*60)
+        print("\n" + "="*60, flush=True)
+        print("INICIANDO PROCESSO DE INDEXAÇÃO (PRIMEIRA EXECUÇÃO)", flush=True)
+        print(f"Repositório: {REPO_NAME}", flush=True)
+        print("="*60, flush=True)
 
-        print("\n--- ETAPA 1 de 3: Clonando e Carregando Repositório ---")
+        print("\n--- ETAPA 1 de 3: Clonando e Carregando Repositório ---", flush=True)
         repo_branch = os.getenv("REPO_BRANCH", "main")
         clone_repo(REPO_URL, repo_branch, LOCAL_REPO_PATH)
 
@@ -58,17 +58,17 @@ def index_repository():
         if not documents:
             raise Exception("Nenhum documento foi carregado. Verifique os padrões de arquivo.")
 
-        print(f">>> SUCESSO: Etapa 1 concluída.")
+        print(f">>> SUCESSO: Etapa 1 concluída.", flush=True)
 
-        print("\n--- ETAPA 2 de 3: Dividindo Documentos ---")
+        print("\n--- ETAPA 2 de 3: Dividindo Documentos ---", flush=True)
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
         chunks = text_splitter.split_documents(documents)
-        print(f">>> SUCESSO: Documentos divididos em {len(chunks)} pedaços.")
+        print(f">>> SUCESSO: Documentos divididos em {len(chunks)} pedaços.", flush=True)
 
         total_tokens_gerados = sum(contar_tokens_openai(doc.page_content) for doc in chunks)
-        print(f">>> Total estimado de tokens para embeddings: {total_tokens_gerados}")
+        print(f">>> Total estimado de tokens para embeddings: {total_tokens_gerados}", flush=True)
 
-        print("\n--- ETAPA 3 de 3: Gerando e Armazenando Embeddings ---")
+        print("\n--- ETAPA 3 de 3: Gerando e Armazenando Embeddings ---", flush=True)
         vectorstore = Chroma(
             persist_directory=DB_PATH,
             embedding_function=embeddings
@@ -81,29 +81,29 @@ def index_repository():
             batch = chunks[i:i + batch_size]
             current_batch_num = i // batch_size + 1
             total_chars = sum(len(doc.page_content) for doc in batch)
-            print(f"  -> Preparando lote {current_batch_num}/{total_batches} ({len(batch)} documentos, ~{total_chars} caracteres)...")
-            print("     Enviando para a API da OpenAI e aguardando resposta (pode levar alguns minutos)...")
+            print(f"  -> Preparando lote {current_batch_num}/{total_batches} ({len(batch)} documentos, ~{total_chars} caracteres)...", flush=True)
+            print("     Enviando para a API da OpenAI e aguardando resposta (pode levar alguns minutos)...", flush=True)
             vectorstore.add_documents(documents=batch)
-            print(f"     Lote {current_batch_num} processado com sucesso!")
+            print(f"     Lote {current_batch_num} processado com sucesso!", flush=True)
 
-        print("\n" + "="*60)
-        print("INDEXAÇÃO CONCLUÍDA COM SUCESSO!")
-        print("="*60 + "\n")
+        print("\n" + "="*60, flush=True)
+        print("INDEXAÇÃO CONCLUÍDA COM SUCESSO!", flush=True)
+        print("="*60 + "\n", flush=True)
 
         gerar_relatorio_extensoes(extensoes_processadas, extensoes_descartadas)
         gerar_relatorio_tokens(total_tokens_gerados)
     else:
-        print("\n" + "="*60)
-        print(f"Carregando base de dados vetorial existente para '{REPO_NAME}'...")
+        print("\n" + "="*60, flush=True)
+        print(f"Carregando base de dados vetorial existente para '{REPO_NAME}'...", flush=True)
         vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
-        print(">>> SUCESSO: Base de dados carregada da memória.")
-        print("="*60 + "\n")
+        print(">>> SUCESSO: Base de dados carregada da memória.", flush=True)
+        print("="*60 + "\n", flush=True)
         gerar_relatorio_extensoes(extensoes_processadas, extensoes_descartadas)
 
     retriever = vectorstore.as_retriever()
-    print(f"Servidor pronto. Repositório '{REPO_NAME}' está carregado e pronto para consultas.")
+    print(f"Servidor pronto. Repositório '{REPO_NAME}' está carregado e pronto para consultas.", flush=True)
     server_ready = True
-    print(">>> Servidor ACEITANDO conexões HTTP na porta 8000.")
+    print(">>> Servidor ACEITANDO conexões HTTP na porta 8000.", flush=True)
 
 @app.on_event("startup")
 def startup_event():
@@ -120,7 +120,7 @@ def retrieve_context(request: RetrieveRequest):
     if not server_ready:
         raise HTTPException(status_code=503, detail="O servidor ainda está inicializando. Tente novamente em alguns segundos.")
 
-    print(f"Recebida busca por: '{request.query}' com top_k={request.top_k}")
+    print(f"Recebida busca por: '{request.query}' com top_k={request.top_k}", flush=True)
     retriever.search_kwargs['k'] = request.top_k
     relevant_docs = retriever.invoke(request.query)
 
