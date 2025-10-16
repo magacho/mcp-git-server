@@ -29,8 +29,10 @@ def load_documents_robustly(
     path: str,
     extensoes_processadas,
     extensoes_descartadas,
-    max_load_workers=8
+    max_load_workers=None
 ):
+    if max_load_workers is None:
+        max_load_workers = min(8, (os.cpu_count() or 1) + 4)
     import os
     files_to_process = []
     for root, _, files in os.walk(path):

@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
 from collections import defaultdict
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
@@ -7,6 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+import asyncio
 
 from models import RetrieveRequest, DocumentFragment, RetrieveResponse
 from repo_utils import get_repo_name_from_url, clone_repo
@@ -26,11 +28,20 @@ REPO_NAME = get_repo_name_from_url(REPO_URL)
 LOCAL_REPO_PATH = f"/app/repos/{REPO_NAME}" 
 DB_PATH = f"/app/chroma_db/{REPO_NAME}"
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await asyncio.to_thread(index_repository)
+    yield
+    # Shutdown - cleanup se necessário
+    pass
+
 # --- INICIALIZAÇÃO DA API ---
 app = FastAPI(
     title="Servidor de Recuperação de Contexto (MCP)",
     description="Uma API que recebe uma pergunta e retorna trechos relevantes de um repositório GitHub.",
     version="1.0.0",
+    lifespan=lifespan
 )
 
 vectorstore = None
@@ -109,7 +120,9 @@ def index_repository():
                 print(f"     ERRO no lote {batch_num}: {e}", flush=True)
                 return 0
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        # Usar número otimizado de workers baseado no CPU
+        max_workers = min(4, os.cpu_count() or 1)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for i in range(0, len(chunks), batch_size):
                 batch = chunks[i:i + batch_size]
@@ -138,9 +151,7 @@ def index_repository():
     server_ready = True
     print(">>> Servidor ACEITANDO conexões HTTP na porta 8000.", flush=True)
 
-@app.on_event("startup")
-def startup_event():
-    threading.Thread(target=index_repository, daemon=True).start()
+# Event handler removido - agora usando lifespan
 
 @app.get("/", summary="Verificação de Status")
 def read_root():
@@ -148,21 +159,34 @@ def read_root():
         return {"status": "Servidor inicializando, aguarde..."}
     return {"status": f"MCP Server online para o repositório: {REPO_NAME}"}
 
+@app.get("/health", summary="Health Check")
+def health_check():
+    return {
+        "status": "healthy" if server_ready else "initializing",
+        "repository": REPO_NAME,
+        "ready": server_ready
+    }
+
 @app.post("/retrieve", response_model=RetrieveResponse, summary="Busca fragmentos de contexto")
 def retrieve_context(request: RetrieveRequest):
     if not server_ready:
         raise HTTPException(status_code=503, detail="O servidor ainda está inicializando. Tente novamente em alguns segundos.")
 
-    print(f"Recebida busca por: '{request.query}' com top_k={request.top_k}", flush=True)
-    retriever.search_kwargs['k'] = request.top_k
-    relevant_docs = retriever.invoke(request.query)
+    try:
+        print(f"Recebida busca por: '{request.query}' com top_k={request.top_k}", flush=True)
+        retriever.search_kwargs['k'] = request.top_k
+        relevant_docs = retriever.invoke(request.query)
 
-    response_fragments = [
-        DocumentFragment(
-            source=doc.metadata.get('source', 'N/A'), 
-            content=doc.page_content
-        ) 
-        for doc in relevant_docs
-    ]
+        response_fragments = [
+            DocumentFragment(
+                source=doc.metadata.get('source', 'N/A'), 
+                content=doc.page_content
+            ) 
+            for doc in relevant_docs
+        ]
 
-    return RetrieveResponse(query=request.query, fragments=response_fragments)
+        return RetrieveResponse(query=request.query, fragments=response_fragments)
+    
+    except Exception as e:
+        print(f"Erro durante a busca: {e}", flush=True)
+        raise HTTPException(status_code=500, detail=f"Erro interno durante a busca: {str(e)}")

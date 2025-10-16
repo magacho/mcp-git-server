@@ -65,5 +65,11 @@ curl -X POST "http://localhost:8000/retrieve" \
 
 ---
 
+### 🗺️ Roadmap
+
+Confira o [ROADMAP.md](ROADMAP.md) para ver as funcionalidades planejadas.
+
+---
+
 *Este projeto foi criado em [10 de Outubro de 2025].*
 
