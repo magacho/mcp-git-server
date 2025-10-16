@@ -89,7 +89,7 @@ def index_repository():
                 print(f"     ERRO no lote {batch_num}: {e}", flush=True)
                 return 0
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=2) as executor:
             futures = []
             for i in range(0, len(chunks), batch_size):
                 batch = chunks[i:i + batch_size]
