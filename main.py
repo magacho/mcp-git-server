@@ -15,6 +15,7 @@ from document_loader import load_documents_robustly, EXTENSOES_SUPORTADAS
 from token_utils import contar_tokens, estimar_custo_embeddings
 from report_utils import gerar_relatorio_extensoes, gerar_relatorio_tokens
 from embedding_config import EmbeddingProvider
+from embedding_optimizer import get_optimal_config, get_processing_strategy, estimate_processing_time
 
 # --- CONFIGURAÇÃO A PARTIR DE VARIÁVEIS DE AMBIENTE ---
 REPO_URL = os.environ.get("REPO_URL")
@@ -112,15 +113,26 @@ def index_repository():
             embedding_function=embeddings
         )
 
-        batch_size = 500
-        total_batches = (len(chunks) - 1) // batch_size + 1
+        # Configuração otimizada baseada no provedor e recursos
+        batch_size, max_workers = get_optimal_config(EMBEDDING_PROVIDER, len(chunks))
+        strategy = get_processing_strategy(EMBEDDING_PROVIDER)
+        
+        # Estimar tempo de processamento
+        avg_doc_size = sum(len(doc.page_content) for doc in chunks) // len(chunks)
+        time_estimate = estimate_processing_time(EMBEDDING_PROVIDER, len(chunks), avg_doc_size)
+        
+        print(f">>> Configuração otimizada: batch_size={batch_size}, workers={max_workers}", flush=True)
+        print(f">>> Tempo estimado: {time_estimate['estimated_time_str']}", flush=True)
+        
+        is_openai = EMBEDDING_PROVIDER == "openai"
+        TOKEN_LIMIT_PER_MINUTE = strategy.get("token_limit_per_minute")
 
-        # Controle de tokens por minuto
-        TOKEN_LIMIT_PER_MINUTE = 900000
+        total_batches = (len(chunks) - 1) // batch_size + 1
         tokens_this_minute = 0
         minute_start = time.time()
 
-        def send_batch(batch, batch_num, total_batches, total_chars):
+        def send_batch_openai(batch, batch_num, total_batches, total_chars):
+            """Versão com rate limiting para OpenAI"""
             nonlocal tokens_this_minute, minute_start
             batch_tokens = sum(contar_tokens(doc.page_content, "local") for doc in batch)
 
@@ -134,19 +146,33 @@ def index_repository():
                 tokens_this_minute = 0
                 minute_start = time.time()
 
-            print(f"  -> Preparando lote {batch_num}/{total_batches} ({len(batch)} documentos, ~{total_chars} caracteres)...", flush=True)
-            print("     Enviando para a API da OpenAI e aguardando resposta (pode levar alguns minutos)...", flush=True)
+            print(f"  -> Lote {batch_num}/{total_batches} ({len(batch)} docs, ~{total_chars} chars)...", flush=True)
+            print("     Enviando para OpenAI API...", flush=True)
             try:
                 vectorstore.add_documents(documents=batch)
                 tokens_this_minute += batch_tokens
-                print(f"     Lote {batch_num} processado com sucesso! ({batch_tokens} tokens)", flush=True)
+                print(f"     ✅ Lote {batch_num} processado! ({batch_tokens} tokens)", flush=True)
                 return len(batch)
             except Exception as e:
-                print(f"     ERRO no lote {batch_num}: {e}", flush=True)
+                print(f"     ❌ ERRO no lote {batch_num}: {e}", flush=True)
                 return 0
 
-        # Usar número otimizado de workers baseado no CPU
-        max_workers = min(4, os.cpu_count() or 1)
+        def send_batch_local(batch, batch_num, total_batches, total_chars):
+            """Versão otimizada para embeddings locais"""
+            print(f"  -> Lote {batch_num}/{total_batches} ({len(batch)} docs, ~{total_chars} chars)...", flush=True)
+            try:
+                vectorstore.add_documents(documents=batch)
+                print(f"     ✅ Lote {batch_num} processado!", flush=True)
+                return len(batch)
+            except Exception as e:
+                print(f"     ❌ ERRO no lote {batch_num}: {e}", flush=True)
+                return 0
+
+        # Escolher função de processamento
+        send_batch = send_batch_openai if is_openai else send_batch_local
+
+        print(f">>> Processando {len(chunks)} documentos em {total_batches} lotes (batch_size={batch_size}, workers={max_workers})", flush=True)
+        
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for i in range(0, len(chunks), batch_size):
@@ -154,6 +180,8 @@ def index_repository():
                 current_batch_num = i // batch_size + 1
                 total_chars = sum(len(doc.page_content) for doc in batch)
                 futures.append(executor.submit(send_batch, batch, current_batch_num, total_batches, total_chars))
+            
+            # Aguardar conclusão
             for future in as_completed(futures):
                 pass
 

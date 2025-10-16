@@ -1,0 +1,180 @@
+name: Generate Release Notes
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  generate-release-notes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get previous tag
+        id: previous-tag
+        run: |
+          # Get the second most recent tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | sed -n '2p')
+          if [ -z "$PREVIOUS_TAG" ]; then
+            # If no previous tag, use first commit
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          echo "previous_tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREVIOUS_TAG"
+
+      - name: Get current tag
+        id: current-tag
+        run: |
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          echo "current_tag=$CURRENT_TAG" >> $GITHUB_OUTPUT
+          echo "Current tag: $CURRENT_TAG"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREVIOUS_TAG="${{ steps.previous-tag.outputs.previous_tag }}"
+          CURRENT_TAG="${{ steps.current-tag.outputs.current_tag }}"
+          
+          echo "Generating changelog from $PREVIOUS_TAG to $CURRENT_TAG"
+          
+          # Get commits between tags
+          COMMITS=$(git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..$CURRENT_TAG --no-merges)
+          
+          # Categorize commits
+          FEATURES=""
+          FIXES=""
+          DOCS=""
+          CHORES=""
+          BREAKING=""
+          
+          while IFS= read -r commit; do
+            if [[ $commit == *"feat"* ]] || [[ $commit == *"feature"* ]]; then
+              FEATURES="$FEATURES\n$commit"
+            elif [[ $commit == *"fix"* ]] || [[ $commit == *"bug"* ]]; then
+              FIXES="$FIXES\n$commit"
+            elif [[ $commit == *"docs"* ]] || [[ $commit == *"doc"* ]]; then
+              DOCS="$DOCS\n$commit"
+            elif [[ $commit == *"BREAKING"* ]] || [[ $commit == *"breaking"* ]]; then
+              BREAKING="$BREAKING\n$commit"
+            else
+              CHORES="$CHORES\n$commit"
+            fi
+          done <<< "$COMMITS"
+          
+          # Build release notes
+          RELEASE_NOTES="# Release Notes - $CURRENT_TAG\n\n"
+          
+          # Add release date
+          RELEASE_NOTES="$RELEASE_NOTES**Release Date:** $(date '+%Y-%m-%d')\n\n"
+          
+          # Add comparison link
+          RELEASE_NOTES="$RELEASE_NOTES**Full Changelog:** [\`$PREVIOUS_TAG...$CURRENT_TAG\`](https://github.com/${{ github.repository }}/compare/$PREVIOUS_TAG...$CURRENT_TAG)\n\n"
+          
+          # Add breaking changes first
+          if [ ! -z "$BREAKING" ]; then
+            RELEASE_NOTES="$RELEASE_NOTES## 🚨 Breaking Changes\n$BREAKING\n\n"
+          fi
+          
+          # Add features
+          if [ ! -z "$FEATURES" ]; then
+            RELEASE_NOTES="$RELEASE_NOTES## ✨ New Features\n$FEATURES\n\n"
+          fi
+          
+          # Add fixes
+          if [ ! -z "$FIXES" ]; then
+            RELEASE_NOTES="$RELEASE_NOTES## 🐛 Bug Fixes\n$FIXES\n\n"
+          fi
+          
+          # Add documentation
+          if [ ! -z "$DOCS" ]; then
+            RELEASE_NOTES="$RELEASE_NOTES## 📚 Documentation\n$DOCS\n\n"
+          fi
+          
+          # Add other changes
+          if [ ! -z "$CHORES" ]; then
+            RELEASE_NOTES="$RELEASE_NOTES## 🔧 Other Changes\n$CHORES\n\n"
+          fi
+          
+          # Add installation instructions
+          RELEASE_NOTES="$RELEASE_NOTES## 🚀 Installation\n\n"
+          RELEASE_NOTES="$RELEASE_NOTES### Docker (Recommended)\n\n"
+          RELEASE_NOTES="$RELEASE_NOTES\`\`\`bash\n"
+          RELEASE_NOTES="$RELEASE_NOTES# Modo gratuito (embeddings locais)\n"
+          RELEASE_NOTES="$RELEASE_NOTES docker run -p 8000:8000 \\\\\n"
+          RELEASE_NOTES="$RELEASE_NOTES   -e REPO_URL=\"https://github.com/seu-usuario/seu-repo.git\" \\\\\n"
+          RELEASE_NOTES="$RELEASE_NOTES   -v ./data:/app/chroma_db \\\\\n"
+          RELEASE_NOTES="$RELEASE_NOTES   flaviomagacho/mcp-git-server:$CURRENT_TAG\n"
+          RELEASE_NOTES="$RELEASE_NOTES\`\`\`\n\n"
+          
+          # Add what's changed summary
+          TOTAL_COMMITS=$(echo "$COMMITS" | wc -l)
+          RELEASE_NOTES="$RELEASE_NOTES## 📊 Summary\n\n"
+          RELEASE_NOTES="$RELEASE_NOTES- **Total commits:** $TOTAL_COMMITS\n"
+          RELEASE_NOTES="$RELEASE_NOTES- **Contributors:** @${{ github.actor }}\n"
+          
+          # Save to file and output
+          echo -e "$RELEASE_NOTES" > release_notes.md
+          
+          # Also save for GitHub output (escape newlines)
+          {
+            echo 'release_notes<<EOF'
+            echo -e "$RELEASE_NOTES"
+            echo EOF
+          } >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.current-tag.outputs.current_tag }}
+          name: Release ${{ steps.current-tag.outputs.current_tag }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update CHANGELOG.md
+        run: |
+          CURRENT_TAG="${{ steps.current-tag.outputs.current_tag }}"
+          
+          # Create or update CHANGELOG.md
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+          
+          # Add new release to top of changelog
+          {
+            head -n 4 CHANGELOG.md
+            echo ""
+            cat release_notes.md
+            echo ""
+            echo "---"
+            echo ""
+            tail -n +5 CHANGELOG.md
+          } > CHANGELOG_new.md
+          
+          mv CHANGELOG_new.md CHANGELOG.md
+
+      - name: Commit updated CHANGELOG
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add CHANGELOG.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: update CHANGELOG for ${{ steps.current-tag.outputs.current_tag }}"
+            git push origin main
+          fi
