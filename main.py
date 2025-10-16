@@ -76,11 +76,11 @@ def index_repository():
             embedding_function=embeddings
         )
 
-        batch_size = 350
+        batch_size = 500
         total_batches = (len(chunks) - 1) // batch_size + 1
 
         # Controle de tokens por minuto
-        TOKEN_LIMIT_PER_MINUTE = 1000
+        TOKEN_LIMIT_PER_MINUTE = 900000
         tokens_this_minute = 0
         minute_start = time.time()
 
