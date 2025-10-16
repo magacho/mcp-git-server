@@ -1,41 +1,53 @@
-# Use uma imagem base do Python mais recente
+# Dockerfile otimizado para embeddings locais
 FROM python:3.12-slim
 
-# Instalar dependências do sistema em uma única camada
+# Instalar dependências do sistema
 RUN apt-get update && apt-get install -y \
     git \
-    libmagic-dev \
+    libmagic1 \
+    build-essential \
     pkg-config \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Defina o diretório de trabalho dentro do container
+# Configurar diretório de trabalho
 WORKDIR /app
 
-# Criar usuário não-root para segurança
-RUN useradd --create-home --shell /bin/bash app \
+# Criar usuário não-root
+RUN useradd --create-home --shell /bin/bash --uid 1000 app \
     && chown -R app:app /app
-USER app
 
-# Copie o arquivo de dependências primeiro para aproveitar o cache do Docker
-COPY --chown=app:app requirements.txt .
+# Copiar requirements primeiro para cache
+COPY requirements.txt ./
 
-# Instale as dependências com pip atualizado
+# Instalar dependências Python
 RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir -r requirements.txt
 
-# Copie o resto do código da aplicação
-COPY --chown=app:app *.py .
-
 # Criar diretórios necessários
-RUN mkdir -p /app/repos /app/chroma_db
+RUN mkdir -p /app/repos /app/chroma_db \
+    && chown -R app:app /app/repos /app/chroma_db
 
-# Exponha a porta em que a API vai rodar
+# Mudar para usuário não-root
+USER app
+
+# Copiar código da aplicação
+COPY --chown=app:app *.py ./
+
+# Configuração padrão para embeddings locais
+ENV EMBEDDING_PROVIDER=sentence-transformers
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+# Método de contagem de tokens (local/tiktoken)
+ENV TOKENIZER_MODE=local
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)" || exit 1
+
+# Expor porta
 EXPOSE 8000
 
-# Configuração padrão para embeddings locais (gratuito)
-ENV EMBEDDING_PROVIDER=sentence-transformers
-ENV TOKEN_COUNT_METHOD=local
-
-# Configurações de produção para uvicorn
+# Comando de inicialização
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--access-log"]

@@ -23,7 +23,7 @@ if not REPO_URL:
 
 # Configuração flexível de embeddings - padrão local (gratuito)
 EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers")
-TOKEN_COUNT_METHOD = os.getenv("TOKEN_COUNT_METHOD", "local")
+TOKEN_COUNT_METHOD = os.getenv("TOKENIZER_MODE", os.getenv("TOKEN_COUNT_METHOD", "local"))
 
 REPO_NAME = get_repo_name_from_url(REPO_URL)
 LOCAL_REPO_PATH = f"/app/repos/{REPO_NAME}" 

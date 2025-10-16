@@ -3,8 +3,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain_community.document_loaders import JSONLoader, PyPDFLoader
 
 EXTENSOES_SUPORTADAS = [
-    ".md", ".ts", ".js", ".tsx", ".jsx", ".py", ".html", ".css", ".txt", ".json", ".pdf"
+    ".md", ".ts", ".js", ".tsx", ".jsx", ".py", ".java", ".html", ".css", ".txt", ".json", ".pdf", ""
 ]
+
+# Arquivos especiais sem extensão que devem ser processados
+ARQUIVOS_ESPECIAIS = ["README", "LICENSE", "CHANGELOG", "CONTRIBUTING", "AUTHORS"]
 
 def process_file(full_path, ext):
     try:
@@ -33,12 +36,17 @@ def load_documents_robustly(
 ):
     if max_load_workers is None:
         max_load_workers = min(8, (os.cpu_count() or 1) + 4)
-    import os
     files_to_process = []
     for root, _, files in os.walk(path):
         for fname in files:
             ext = os.path.splitext(fname)[1].lower()
             full_path = os.path.abspath(os.path.join(root, fname))
+            
+            # Verificar se é arquivo especial sem extensão
+            if ext == "" and fname.upper() in ARQUIVOS_ESPECIAIS:
+                files_to_process.append((full_path, ext))
+                continue
+            
             if ext not in EXTENSOES_SUPORTADAS:
                 extensoes_descartadas[ext] += 1
                 continue

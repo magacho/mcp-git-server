@@ -27,6 +27,7 @@ Este projeto fornece um servidor de API autocontido em Docker que clona um repos
 ```bash
 docker run -p 8000:8000 \
   -e REPO_URL="https://github.com/n8n-io/n8n.git" \
+  -e REPO_BRANCH="master" \
   -v ./mcp_data/chroma_db:/app/chroma_db \
   --name mcp-server \
   flaviomagacho/mcp-git-server:latest
@@ -36,6 +37,7 @@ docker run -p 8000:8000 \
 ```bash
 docker run -p 8000:8000 \
   -e REPO_URL="https://github.com/n8n-io/n8n.git" \
+  -e REPO_BRANCH="master" \
   -e EMBEDDING_PROVIDER="openai" \
   -e OPENAI_API_KEY="SUA_CHAVE_API_SEGURA" \
   -v ./mcp_data/chroma_db:/app/chroma_db \
@@ -43,7 +45,7 @@ docker run -p 8000:8000 \
   flaviomagacho/mcp-git-server:latest
 ```
 
-#### Build Local (Opcional)
+#### Build e Teste Local
 
 ```bash
 # Clone e build
@@ -51,9 +53,19 @@ git clone https://github.com/magacho/mcp-git-server.git
 cd mcp-git-server
 docker build -t mcp-git-server .
 
-# Usar imagem local ao invés da do Docker Hub
+# Teste com repositório pequeno
 docker run -p 8000:8000 \
-  -e REPO_URL="https://github.com/seu-repo.git" \
+  -e REPO_URL="https://github.com/octocat/Hello-World.git" \
+  -e REPO_BRANCH="master" \
+  mcp-git-server
+
+# Verificar status (em outro terminal)
+curl http://localhost:8000/health
+
+# Usar com seu repositório
+docker run -p 8000:8000 \
+  -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
+  -e REPO_BRANCH="main" \
   -v ./data/chroma_db:/app/chroma_db \
   mcp-git-server
 ```

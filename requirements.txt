@@ -2,13 +2,13 @@
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 
-# LangChain ecosystem - versões específicas para estabilidade
-langchain>=0.1.0
-langchain-openai>=0.1.0
-langchain-community>=0.0.20
-langchain-text-splitters>=0.0.1
-langchain-chroma>=0.1.0
-langchain-core>=0.1.0
+# LangChain ecosystem - versões compatíveis
+langchain>=0.1.0,<0.2.0
+langchain-openai>=0.1.0,<0.2.0
+langchain-community>=0.0.20,<0.1.0
+langchain-text-splitters>=0.0.1,<0.1.0
+langchain-chroma>=0.1.0,<0.2.0
+langchain-core>=0.1.0,<0.2.0
 
 # Utilities
 GitPython>=3.1.40
@@ -20,8 +20,7 @@ pypdf>=3.17.0
 tiktoken>=0.5.0
 pydantic>=2.0.0
 
-# Embeddings locais (opcionais)
+# Embeddings locais (torch instalado separadamente para CPU)
 sentence-transformers>=2.2.0
-torch>=2.0.0
 transformers>=4.30.0
 langchain-huggingface>=0.0.1
