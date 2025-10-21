@@ -1,0 +1,119 @@
+name: Tests & Code Quality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.12']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    
+    - name: Run tests with coverage
+      env:
+        REPO_URL: https://github.com/octocat/Hello-World.git
+        REPO_BRANCH: master
+        EMBEDDING_PROVIDER: sentence-transformers
+      run: |
+        pytest tests/ -v --cov=. --cov-report=term --cov-report=xml --cov-report=html
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+    
+    - name: Archive coverage reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: htmlcov/
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff black isort mypy
+    
+    - name: Check code formatting (Black)
+      run: black --check --diff .
+      continue-on-error: true
+    
+    - name: Check import sorting (isort)
+      run: isort --check-only --diff .
+      continue-on-error: true
+    
+    - name: Lint with Ruff
+      run: ruff check .
+      continue-on-error: true
+    
+    - name: Type checking (mypy)
+      run: mypy . --ignore-missing-imports
+      continue-on-error: true
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety bandit pip-audit
+    
+    - name: Check for known vulnerabilities (Safety)
+      run: |
+        pip install -r requirements.txt
+        safety check --json || true
+    
+    - name: Security linting (Bandit)
+      run: bandit -r . -f json || true
+    
+    - name: Audit dependencies (pip-audit)
+      run: pip-audit || true
+      continue-on-error: true

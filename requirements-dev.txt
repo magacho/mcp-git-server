@@ -1,0 +1,20 @@
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+pytest-timeout>=2.1.0
+httpx>=0.24.0  # Para TestClient
+
+# Code quality
+black>=23.7.0
+ruff>=0.0.285
+mypy>=1.5.0
+isort>=5.12.0
+
+# Security
+bandit>=1.7.5
+safety>=2.3.5
+
+# Additional logging
+structlog>=23.1.0

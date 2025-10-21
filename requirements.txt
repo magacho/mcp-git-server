@@ -25,3 +25,6 @@ psutil>=5.9.0
 sentence-transformers>=2.2.0
 transformers>=4.30.0
 langchain-huggingface>=0.0.1
+
+# Logging estruturado
+structlog>=23.1.0
