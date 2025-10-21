@@ -1,5 +1,5 @@
 """
-Structured logging configuration
+Configuração de logging estruturado
 """
 import structlog
 import logging

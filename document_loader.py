@@ -2,7 +2,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain_community.document_loaders import JSONLoader, PyPDFLoader
 
-SUPPORTED_EXTENSIONS = [
+EXTENSOES_SUPORTADAS = [
     ".md", ".ts", ".js", ".tsx", ".jsx", ".py", ".java", ".html", ".css", ".txt", ".json", ".pdf", 
     ".yml", ".yaml", ".xml", ".sql", ".sh", ".bash", ".dockerfile", ".env", ".gitignore", 
     ".vue", ".svelte", ".go", ".rs", ".cpp", ".c", ".h", ".cs", ".php", ".rb", ".swift", ""
@@ -16,16 +16,6 @@ SPECIAL_FILES = [
 ]
 
 def process_file(full_path, ext):
-    """
-    Process a single file and return its content as a document
-    
-    Args:
-        full_path: Full path to the file
-        ext: File extension
-        
-    Returns:
-        Tuple of (extension, documents, error)
-    """
     try:
         if ext == ".json":
             # Try JSONLoader first, fallback to manual processing if it fails
@@ -35,18 +25,18 @@ def process_file(full_path, ext):
                 if docs:
                     return ext, docs, None
             except Exception:
-                # Fallback: process JSON manually
+                # Fallback: processar JSON manualmente
                 import json
                 with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
                     try:
                         json_data = json.load(f)
-                        # Convert JSON to readable text
+                        # Converter JSON para texto legível
                         content = json.dumps(json_data, indent=2, ensure_ascii=False)
                         from langchain_core.documents import Document
                         doc = Document(page_content=content, metadata={"source": full_path, "type": "json"})
                         return ext, [doc], None
                     except json.JSONDecodeError:
-                        # If not valid JSON, treat as text
+                        # Se não for JSON válido, tratar como texto
                         f.seek(0)
                         content = f.read()
                         from langchain_core.documents import Document
@@ -57,34 +47,22 @@ def process_file(full_path, ext):
             docs = list(loader.lazy_load())
             return ext, docs, None
         else:
-            # Use simple loader for text, markdown, code, etc.
+            # Use um loader simples para texto, markdown, código, etc.
             with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
-            # Simulate a LangChain Document object
+            # Simule um objeto Document do LangChain
             from langchain_core.documents import Document
             doc = Document(page_content=content, metadata={"source": full_path})
             return ext, [doc], None
     except Exception as e:
-        return ext, [], f"WARNING: Error processing '{full_path}': {e}"
+        return ext, [], f"AVISO: Erro ao processar '{full_path}': {e}"
 
 def load_documents_robustly(
     path: str,
-    processed_extensions,
-    discarded_extensions,
+    extensoes_processadas,
+    extensoes_descartadas,
     max_load_workers=None
 ):
-    """
-    Load documents from a directory robustly with parallel processing
-    
-    Args:
-        path: Directory path to load documents from
-        processed_extensions: Dictionary to track processed file extensions
-        discarded_extensions: Dictionary to track discarded file extensions
-        max_load_workers: Maximum number of worker threads
-        
-    Yields:
-        Loaded documents
-    """
     if max_load_workers is None:
         max_load_workers = min(8, (os.cpu_count() or 1) + 4)
     files_to_process = []
@@ -95,29 +73,29 @@ def load_documents_robustly(
             
             # Check if it's a special file without extension
             if ext == "" and fname.upper() in SPECIAL_FILES:
-                # Check file size (max 10MB)
+                # Check file size (maximum 10MB)
                 try:
                     if os.path.getsize(full_path) > 10 * 1024 * 1024:
-                        discarded_extensions[f"{ext}_too_large"] += 1
+                        extensoes_descartadas[f"{ext}_too_large"] += 1
                         continue
                 except OSError:
                     continue
                 files_to_process.append((full_path, ext))
                 continue
             
-            if ext not in SUPPORTED_EXTENSIONS:
-                discarded_extensions[ext] += 1
+            if ext not in EXTENSOES_SUPORTADAS:
+                extensoes_descartadas[ext] += 1
                 continue
             
-            # Check file size (max 5MB for files with extension)
+            # Check file size (maximum 5MB for files with extension)
             try:
                 file_size = os.path.getsize(full_path)
                 if file_size > 5 * 1024 * 1024:
-                    discarded_extensions[f"{ext}_too_large"] += 1
+                    extensoes_descartadas[f"{ext}_too_large"] += 1
                     continue
-                # Skip very small files (probably empty)
+                # Pular arquivos muito pequenos (provavelmente vazios)
                 if file_size < 10:
-                    discarded_extensions[f"{ext}_too_small"] += 1
+                    extensoes_descartadas[f"{ext}_too_small"] += 1
                     continue
             except OSError:
                 continue
@@ -131,6 +109,6 @@ def load_documents_robustly(
             if error:
                 print(error, flush=True)
             else:
-                processed_extensions[ext] += len(docs)
+                extensoes_processadas[ext] += len(docs)
                 for doc in docs:
                     yield doc

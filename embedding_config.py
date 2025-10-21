@@ -1,5 +1,5 @@
 """
-Embedding configuration with support for local and external models
+Configuração de embeddings com suporte a modelos locais e externos
 """
 import os
 from typing import Union
@@ -12,26 +12,26 @@ except ImportError:
 from langchain_community.embeddings import SentenceTransformerEmbeddings
 
 class EmbeddingProvider:
-    """Factory for different embedding providers"""
+    """Factory para diferentes provedores de embedding"""
     
     @staticmethod
     def get_embeddings(provider: str = None) -> Union[OpenAIEmbeddings, HuggingFaceEmbeddings, SentenceTransformerEmbeddings]:
         """
-        Returns the configured embedding provider
+        Retorna o provedor de embeddings configurado
         
         Args:
-            provider: 'openai', 'huggingface', 'sentence-transformers', or None (auto-detect)
+            provider: 'openai', 'huggingface', 'sentence-transformers', ou None (auto-detect)
         """
         if provider is None:
             provider = os.getenv("EMBEDDING_PROVIDER", "auto")
         
         if provider == "auto":
-            # Prioritize local embeddings by default (free)
+            # Priorizar embeddings locais por padrão (gratuito)
             provider = "sentence-transformers"
         
         if provider == "openai":
             if "OPENAI_API_KEY" not in os.environ:
-                raise ValueError("OPENAI_API_KEY não encontrada para usar embeddings OpenAI")
+                raise ValueError("OPENAI_API_KEY not found to use OpenAI embeddings")
             return OpenAIEmbeddings()
         
         elif provider == "huggingface":
@@ -53,42 +53,42 @@ class EmbeddingProvider:
             )
         
         else:
-            raise ValueError(f"Provedor de embedding não suportado: {provider}")
+            raise ValueError(f"Embedding provider not supported: {provider}")
 
     @staticmethod
     def get_available_providers() -> dict:
-        """Retorna os provedores disponíveis e suas configurações"""
+        """Returns available providers and their configurations"""
         providers = {}
         
         # OpenAI
         if "OPENAI_API_KEY" in os.environ:
             providers["openai"] = {
                 "available": True,
-                "cost": "Pago por token",
-                "quality": "Alta",
-                "speed": "Rápida (API)"
+                "cost": "Paid per token",
+                "quality": "High",
+                "speed": "Fast (API)"
             }
         else:
             providers["openai"] = {
                 "available": False,
-                "reason": "OPENAI_API_KEY não configurada"
+                "reason": "OPENAI_API_KEY not configured"
             }
         
-        # Sentence Transformers (sempre disponível)
+        # Sentence Transformers (always available)
         providers["sentence-transformers"] = {
             "available": True,
-            "cost": "Gratuito",
-            "quality": "Boa",
-            "speed": "Média (local)",
+            "cost": "Free",
+            "quality": "Good",
+            "speed": "Medium (local)",
             "model": os.getenv("ST_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
         }
         
         # HuggingFace
         providers["huggingface"] = {
             "available": True,
-            "cost": "Gratuito",
-            "quality": "Boa",
-            "speed": "Média (local)",
+            "cost": "Free",
+            "quality": "Good",
+            "speed": "Medium (local)",
             "model": os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
         }
         

@@ -32,7 +32,7 @@ async def verify_api_key(api_key: str = Security(API_KEY_HEADER)) -> str:
         # Modo desenvolvimento - sem autenticação
         logger.warning(
             "api_auth_disabled",
-            message="API_KEY não configurada - autenticação desabilitada"
+            message="API_KEY not configured - authentication disabled"
         )
         return None
     
@@ -40,25 +40,25 @@ async def verify_api_key(api_key: str = Security(API_KEY_HEADER)) -> str:
     if not api_key:
         logger.warning(
             "api_auth_missing",
-            message="Tentativa de acesso sem API key"
+            message="Access attempt without API key"
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="API key ausente. Forneça X-API-Key no header."
+            detail="Missing API key. Provide X-API-Key in header."
         )
     
     # Verificar se API key é válida
     if api_key != expected_key:
         logger.warning(
             "api_auth_invalid",
-            message="Tentativa de acesso com API key inválida"
+            message="Access attempt with invalid API key"
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="API key inválida"
+            detail="Invalid API key"
         )
     
-    logger.debug("api_auth_success", message="Autenticação bem-sucedida")
+    logger.debug("api_auth_success", message="Authentication successful")
     return api_key
 
 

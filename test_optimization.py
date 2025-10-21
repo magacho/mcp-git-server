@@ -5,16 +5,16 @@ Teste das otimizações de embedding
 from embedding_optimizer import get_optimal_config, get_processing_strategy, estimate_processing_time
 
 def test_optimizations():
-    """Testa as otimizações para diferentes cenários"""
+    """Tests optimizations for different scenarios"""
     
     providers = ["openai", "sentence-transformers", "huggingface"]
     document_counts = [100, 1000, 5000, 10000]
     
-    print("🧪 Testando Otimizações de Embedding")
+    print("🧪 Testing Embedding Optimizations")
     print("=" * 60)
     
     for provider in providers:
-        print(f"\n🤖 Provedor: {provider.upper()}")
+        print(f"\n🤖 Provider: {provider.upper()}")
         print("-" * 40)
         
         strategy = get_processing_strategy(provider)
@@ -28,7 +28,7 @@ def test_optimizations():
             print(f"\n  📊 {doc_count:,} documents:")
             print(f"     Batch Size: {batch_size}")
             print(f"     Workers: {max_workers}")
-            print(f"     Tempo Estimado: {time_est['estimated_time_str']}")
+            print(f"     Estimated Time: {time_est['estimated_time_str']}")
 
 if __name__ == "__main__":
     test_optimizations()

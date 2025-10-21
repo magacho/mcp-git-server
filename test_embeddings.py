@@ -8,7 +8,7 @@ from embedding_config import EmbeddingProvider
 from token_utils import contar_tokens, estimar_custo_embeddings
 
 def test_embedding_providers():
-    """Testa todos os provedores disponíveis"""
+    """Tests all available providers"""
     
     # Texto de teste
     test_text = """
@@ -17,7 +17,7 @@ def test_embedding_providers():
             return n
         return fibonacci(n-1) + fibonacci(n-2)
     
-    # This is a Python code example
+    # Este é um exemplo de código Python
     # que implementa a sequência de Fibonacci
     """
     
@@ -29,46 +29,46 @@ def test_embedding_providers():
         print(f"--- {provider_name.upper()} ---")
         
         if not info.get("available", False):
-            print(f"❌ Não disponível: {info.get('reason', 'Motivo desconhecido')}")
+            print(f"❌ Not available: {info.get('reason', 'Unknown reason')}")
             print()
             continue
         
         try:
-            print(f"✅ Disponível")
-            print(f"   Custo: {info.get('cost', 'N/A')}")
-            print(f"   Qualidade: {info.get('quality', 'N/A')}")
-            print(f"   Velocidade: {info.get('speed', 'N/A')}")
+            print(f"✅ Available")
+            print(f"   Cost: {info.get('cost', 'N/A')}")
+            print(f"   Quality: {info.get('quality', 'N/A')}")
+            print(f"   Speed: {info.get('speed', 'N/A')}")
             
             if 'model' in info:
-                print(f"   Modelo: {info['model']}")
+                print(f"   Model: {info['model']}")
             
-            # Teste de embedding
+            # Embedding test
             start_time = time.time()
             embeddings = EmbeddingProvider.get_embeddings(provider_name)
             
-            # Teste com texto pequeno
-            result = embeddings.embed_query("teste rápido")
+            # Test with small text
+            result = embeddings.embed_query("quick test")
             end_time = time.time()
             
-            print(f"   Dimensões do vetor: {len(result)}")
-            print(f"   Tempo para embedding: {end_time - start_time:.2f}s")
+            print(f"   Vector dimensions: {len(result)}")
+            print(f"   Time for embedding: {end_time - start_time:.2f}s")
             
         except Exception as e:
-            print(f"❌ Error testing: {e}")
+            print(f"❌ Error during test: {e}")
         
         print()
 
 def test_token_counting():
-    """Testa diferentes métodos de contagem de tokens"""
+    """Tests different token counting methods"""
     
     test_texts = [
-        "Texto curto para teste",
-        "Este é um texto médio que contém várias palavras e deveria ter uma contagem de tokens razoável para comparação entre métodos.",
+        "Short text for testing",
+        "This is a medium text that contains several words and should have a reasonable token count for comparison between methods.",
         """
         def example_code():
             # This is a Python code example
             for i in range(10):
-                print(f"Número: {i}")
+                print(f"Number: {i}")
                 if i % 2 == 0:
                     continue
                 else:
@@ -79,9 +79,9 @@ def test_token_counting():
     print("=== TESTE DE CONTAGEM DE TOKENS ===\n")
     
     for i, text in enumerate(test_texts, 1):
-        print(f"--- TEXTO {i} ({len(text)} caracteres) ---")
+        print(f"--- TEXT {i} ({len(text)} characters) ---")
         
-        # Teste diferentes métodos
+        # Test different methods
         methods = ["local", "tiktoken"]
         
         for method in methods:
@@ -98,9 +98,9 @@ def test_token_counting():
         print()
 
 def test_cost_estimation():
-    """Testa estimativa de custos"""
+    """Tests cost estimation"""
     
-    print("=== ESTIMATIVA DE CUSTOS ===\n")
+    print("=== COST ESTIMATION ===\n")
     
     token_amounts = [1000, 10000, 100000, 1000000]
     
@@ -118,16 +118,16 @@ def test_cost_estimation():
         print()
 
 if __name__ == "__main__":
-    print("🧪 INICIANDO TESTES DE EMBEDDING E TOKENIZAÇÃO\n")
+    print("🧪 STARTING EMBEDDING AND TOKENIZATION TESTS\n")
     
     try:
         test_embedding_providers()
         test_token_counting()
         test_cost_estimation()
         
-        print("✅ Todos os testes concluídos!")
+        print("✅ All tests completed!")
         
     except KeyboardInterrupt:
         print("\n❌ Tests interrupted by user")
     except Exception as e:
-        print(f"\n❌ Erro durante os testes: {e}")
+        print(f"\n❌ Error during tests: {e}")

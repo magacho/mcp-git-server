@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Quick test of default configuration
+Teste rápido da configuração padrão
 """
 import os
 from embedding_config import EmbeddingProvider
@@ -8,7 +8,7 @@ from embedding_config import EmbeddingProvider
 def test_default_config():
     print("🧪 Testing default configuration...")
     
-    # Remover OPENAI_API_KEY se existir para testar padrão
+    # Remove OPENAI_API_KEY if it exists to test default
     original_key = os.environ.pop('OPENAI_API_KEY', None)
     
     try:
@@ -16,13 +16,13 @@ def test_default_config():
         embeddings = EmbeddingProvider.get_embeddings()
         print("✅ Default configuration: sentence-transformers")
         
-        # Testar auto-detect
+        # Test auto-detect
         embeddings_auto = EmbeddingProvider.get_embeddings('auto')
         print("✅ Auto-detect: sentence-transformers")
         
-        # Mostrar provedores disponíveis
+        # Show available providers
         providers = EmbeddingProvider.get_available_providers()
-        print("\n📋 Provedores disponíveis:")
+        print("\n📋 Available providers:")
         for name, info in providers.items():
             status = "✅" if info.get('available') else "❌"
             cost = info.get('cost', 'N/A')
@@ -34,7 +34,7 @@ def test_default_config():
         print(f"❌ Error: {e}")
     
     finally:
-        # Restaurar chave se existia
+        # Restore key if it existed
         if original_key:
             os.environ['OPENAI_API_KEY'] = original_key
 

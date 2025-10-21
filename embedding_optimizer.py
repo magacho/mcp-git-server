@@ -1,5 +1,5 @@
 """
-Otimizador de embeddings baseado no provedor
+Embedding optimizer based on provider
 """
 import os
 import psutil
@@ -10,26 +10,26 @@ def get_optimal_config(provider: str, total_documents: int) -> Tuple[int, int]:
     Returns optimized configuration based on provider and available resources
     
     Args:
-        provider: Provedor de embeddings ('openai', 'sentence-transformers', etc.)
+        provider: Embedding provider ('openai', 'sentence-transformers', etc.)
         total_documents: Total number of documents to process
     
     Returns:
         Tuple[batch_size, max_workers]
     """
     
-    # Detectar recursos do sistema
+    # Detect system resources
     cpu_count = os.cpu_count() or 1
     memory_gb = psutil.virtual_memory().total / (1024**3)
     
     if provider == "openai":
-        # OpenAI: Conservador devido a rate limits
+        # OpenAI: Conservative due to rate limits
         batch_size = min(500, max(50, total_documents // 10))
         max_workers = min(2, cpu_count)
         
     elif provider in ["sentence-transformers", "huggingface"]:
-        # Embeddings locais: Otimizar baseado em recursos
+        # Local embeddings: Optimize based on resources
         
-        # Batch size baseado na memória disponível
+        # Batch size based on available memory
         if memory_gb >= 16:
             batch_size = min(2000, max(200, total_documents // 5))
         elif memory_gb >= 8:
@@ -37,7 +37,7 @@ def get_optimal_config(provider: str, total_documents: int) -> Tuple[int, int]:
         else:
             batch_size = min(500, max(50, total_documents // 10))
         
-        # Workers baseado em CPU
+        # Workers based on CPU
         if cpu_count >= 8:
             max_workers = min(8, cpu_count)
         elif cpu_count >= 4:
@@ -51,7 +51,7 @@ def get_optimal_config(provider: str, total_documents: int) -> Tuple[int, int]:
             max_workers = min(max_workers, 2)
     
     else:
-        # Fallback para outros provedores
+        # Fallback for other providers
         batch_size = min(1000, max(100, total_documents // 8))
         max_workers = min(4, cpu_count)
     
@@ -62,10 +62,10 @@ def get_processing_strategy(provider: str) -> dict:
     Returns processing strategy based on provider
     
     Args:
-        provider: Provedor de embeddings
+        provider: Embedding provider
         
     Returns:
-        Dict com configurações de estratégia
+        Dict with strategy configurations
     """
     
     if provider == "openai":
@@ -100,24 +100,24 @@ def get_processing_strategy(provider: str) -> dict:
 
 def estimate_processing_time(provider: str, total_documents: int, avg_doc_size: int) -> dict:
     """
-    Estima tempo de processamento baseado no provedor e dados
+    Estimates processing time based on provider and data
     
     Args:
-        provider: Provedor de embeddings
+        provider: Embedding provider
         total_documents: Number of documents
         avg_doc_size: Average document size in characters
         
     Returns:
-        Dict com estimativas de tempo
+        Dict with time estimates
     """
     
     if provider == "openai":
-        # OpenAI: ~1-2 segundos por documento (incluindo rate limiting)
+        # OpenAI: ~1-2 seconds per document (including rate limiting)
         time_per_doc = 1.5
         estimated_seconds = total_documents * time_per_doc
         
     elif provider == "sentence-transformers":
-        # Local: ~0.1-0.5 segundos por documento (dependendo do hardware)
+        # Local: ~0.1-0.5 seconds per document (depending on hardware)
         cpu_count = os.cpu_count() or 1
         memory_gb = psutil.virtual_memory().total / (1024**3)
         
