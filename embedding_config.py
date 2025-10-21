@@ -1,5 +1,5 @@
 """
-Configuração de embeddings com suporte a modelos locais e externos
+Embedding configuration with support for local and external models
 """
 import os
 from typing import Union
@@ -12,21 +12,21 @@ except ImportError:
 from langchain_community.embeddings import SentenceTransformerEmbeddings
 
 class EmbeddingProvider:
-    """Factory para diferentes provedores de embedding"""
+    """Factory for different embedding providers"""
     
     @staticmethod
     def get_embeddings(provider: str = None) -> Union[OpenAIEmbeddings, HuggingFaceEmbeddings, SentenceTransformerEmbeddings]:
         """
-        Retorna o provedor de embeddings configurado
+        Returns the configured embedding provider
         
         Args:
-            provider: 'openai', 'huggingface', 'sentence-transformers', ou None (auto-detect)
+            provider: 'openai', 'huggingface', 'sentence-transformers', or None (auto-detect)
         """
         if provider is None:
             provider = os.getenv("EMBEDDING_PROVIDER", "auto")
         
         if provider == "auto":
-            # Priorizar embeddings locais por padrão (gratuito)
+            # Prioritize local embeddings by default (free)
             provider = "sentence-transformers"
         
         if provider == "openai":

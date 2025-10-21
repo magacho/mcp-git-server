@@ -25,7 +25,7 @@ def test_optimizations():
             batch_size, max_workers = get_optimal_config(provider, doc_count)
             time_est = estimate_processing_time(provider, doc_count, 2000)  # 2KB avg doc
             
-            print(f"\n  📊 {doc_count:,} documentos:")
+            print(f"\n  📊 {doc_count:,} documents:")
             print(f"     Batch Size: {batch_size}")
             print(f"     Workers: {max_workers}")
             print(f"     Tempo Estimado: {time_est['estimated_time_str']}")

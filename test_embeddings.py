@@ -17,7 +17,7 @@ def test_embedding_providers():
             return n
         return fibonacci(n-1) + fibonacci(n-2)
     
-    # Este é um exemplo de código Python
+    # This is a Python code example
     # que implementa a sequência de Fibonacci
     """
     
@@ -54,7 +54,7 @@ def test_embedding_providers():
             print(f"   Tempo para embedding: {end_time - start_time:.2f}s")
             
         except Exception as e:
-            print(f"❌ Erro ao testar: {e}")
+            print(f"❌ Error testing: {e}")
         
         print()
 
@@ -65,8 +65,8 @@ def test_token_counting():
         "Texto curto para teste",
         "Este é um texto médio que contém várias palavras e deveria ter uma contagem de tokens razoável para comparação entre métodos.",
         """
-        def exemplo_codigo():
-            # Este é um exemplo de código Python
+        def example_code():
+            # This is a Python code example
             for i in range(10):
                 print(f"Número: {i}")
                 if i % 2 == 0:
@@ -93,7 +93,7 @@ def test_token_counting():
                 print(f"{method:>10}: {tokens:>6} tokens ({end_time - start_time:.4f}s)")
                 
             except Exception as e:
-                print(f"{method:>10}: Erro - {e}")
+                print(f"{method:>10}: Error - {e}")
         
         print()
 
@@ -128,6 +128,6 @@ if __name__ == "__main__":
         print("✅ Todos os testes concluídos!")
         
     except KeyboardInterrupt:
-        print("\n❌ Testes interrompidos pelo usuário")
+        print("\n❌ Tests interrupted by user")
     except Exception as e:
         print(f"\n❌ Erro durante os testes: {e}")

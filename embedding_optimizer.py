@@ -7,11 +7,11 @@ from typing import Tuple
 
 def get_optimal_config(provider: str, total_documents: int) -> Tuple[int, int]:
     """
-    Retorna configuração otimizada baseada no provedor e recursos disponíveis
+    Returns optimized configuration based on provider and available resources
     
     Args:
         provider: Provedor de embeddings ('openai', 'sentence-transformers', etc.)
-        total_documents: Número total de documentos a processar
+        total_documents: Total number of documents to process
     
     Returns:
         Tuple[batch_size, max_workers]
@@ -45,7 +45,7 @@ def get_optimal_config(provider: str, total_documents: int) -> Tuple[int, int]:
         else:
             max_workers = min(4, cpu_count + 1)
             
-        # Ajustar para documentos pequenos
+        # Adjust for small documents
         if total_documents < 100:
             batch_size = min(batch_size, total_documents)
             max_workers = min(max_workers, 2)
@@ -59,7 +59,7 @@ def get_optimal_config(provider: str, total_documents: int) -> Tuple[int, int]:
 
 def get_processing_strategy(provider: str) -> dict:
     """
-    Retorna estratégia de processamento baseada no provedor
+    Returns processing strategy based on provider
     
     Args:
         provider: Provedor de embeddings
@@ -104,8 +104,8 @@ def estimate_processing_time(provider: str, total_documents: int, avg_doc_size: 
     
     Args:
         provider: Provedor de embeddings
-        total_documents: Número de documentos
-        avg_doc_size: Tamanho médio dos documentos em caracteres
+        total_documents: Number of documents
+        avg_doc_size: Average document size in characters
         
     Returns:
         Dict com estimativas de tempo

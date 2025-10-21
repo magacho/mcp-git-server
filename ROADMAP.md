@@ -1,346 +1,197 @@
-# 🗺️ Roadmap - MCP Git Server
+# Product Roadmap
 
-Este documento contém o planejamento de funcionalidades futuras para o projeto. As funcionalidades estão organizadas por prioridade e complexidade.
-
----
-
-## 🔥 Alta Prioridade
-
-### 1. Suporte a Repositórios Privados do GitHub
-**Status:** 📋 Planejado  
-**Complexidade:** Média  
-**Descrição:**  
-Adicionar autenticação para clonar e indexar repositórios privados do GitHub.
-
-**Implementação sugerida:**
-- Suporte a Personal Access Token (PAT) via variável de ambiente `GITHUB_TOKEN`
-- Suporte a SSH keys montadas no container
-- Suporte a GitHub App authentication para organizações
-- Validação de permissões antes de clonar
-
-**Variáveis de ambiente:**
-```bash
-GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
-REPO_URL=https://github.com/empresa/repo-privado.git
-```
-
-**Benefícios:**
-- Permite uso em projetos corporativos
-- Maior segurança no acesso aos repositórios
-- Integração com CI/CD privado
+## Vision
+Build a production-ready, enterprise-grade Git repository context retrieval system that enables AI-powered code understanding and documentation.
 
 ---
 
-### 2. Detecção e Atualização Automática de Código
-**Status:** 📋 Planejado  
-**Complexidade:** Alta  
-**Descrição:**  
-Implementar sistema de verificação de atualizações no repositório e re-indexação incremental.
+## ✅ Completed (v0.1.0 - v0.5.1)
 
-**Funcionalidades:**
-- **Polling periódico:** Verificar commits novos a cada X minutos
-- **Webhook listener:** Receber notificações do GitHub quando houver push
-- **Re-indexação inteligente:** Processar apenas arquivos modificados
-- **Versionamento:** Manter histórico de versões indexadas
-- **Endpoint de status:** `/status` mostrando última atualização
+### Phase 1: Foundation
+- ✅ Core Git cloning functionality
+- ✅ Document loading and processing
+- ✅ Vector database integration (Chroma)
+- ✅ REST API with FastAPI
+- ✅ Docker containerization
 
-**Implementação sugerida:**
-```python
-# Novo endpoint
-POST /refresh
-{
-  "force": false  # true = re-indexa tudo, false = apenas novos commits
-}
+### Phase 2: Flexibility & Performance
+- ✅ Multiple embedding providers support
+- ✅ Local embeddings (free)
+- ✅ OpenAI embeddings (paid, high quality)
+- ✅ Batch processing optimization
+- ✅ Token counting and cost estimation
 
-# Resposta
-{
-  "status": "updated",
-  "previous_commit": "abc123",
-  "current_commit": "def456",
-  "files_updated": 15,
-  "files_added": 3,
-  "files_removed": 1
-}
-```
+### Phase 3: Quality & Testing
+- ✅ Comprehensive test suite (50+ tests)
+- ✅ CI/CD pipeline with GitHub Actions
+- ✅ Code quality checks
+- ✅ Structured logging
+- ✅ API authentication
 
-**Estratégias de atualização:**
-1. **Incremental:** Git pull + processar apenas diffs
-2. **Snapshot:** Comparar hash dos arquivos
-3. **Timestamp:** Re-indexar arquivos modificados após última indexação
+### Phase 4: Security & Private Repos
+- ✅ GitHub PAT authentication
+- ✅ SSH key support
+- ✅ Secure credential handling
+- ✅ Private repository support
 
-**Benefícios:**
-- Mantém índice sempre atualizado
-- Economiza tokens (não reprocessa tudo)
-- Reduz tempo de atualização
+### Phase 5: Internationalization
+- ✅ Complete English translation
+- ✅ Professional code standards
+- ✅ International accessibility
 
 ---
 
-## 🚀 Média Prioridade
+## 🚧 In Progress
 
-### 3. Autenticação e Autorização da API
-**Status:** 📋 Planejado  
-**Complexidade:** Média  
-**Descrição:**  
-Proteger endpoints com autenticação para evitar uso não autorizado.
-
-**Opções:**
-- API Key via header `X-API-Key`
-- JWT tokens
-- OAuth2 para integração com GitHub
-- Rate limiting por usuário/API key
-
-**Exemplo:**
-```bash
-curl -X POST "http://localhost:8000/retrieve" \
-  -H "X-API-Key: seu-token-secreto" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Como funciona autenticação?"}'
-```
+### Phase 6: Production Hardening (Current)
+- 🔄 Enhanced error handling
+- 🔄 Rate limiting
+- 🔄 Request validation improvements
+- 🔄 Performance monitoring
 
 ---
 
-### 4. Suporte a Múltiplos Repositórios
-**Status:** 💡 Ideia  
-**Complexidade:** Alta  
-**Descrição:**  
-Permitir indexar e consultar múltiplos repositórios simultaneamente.
+## 📋 Planned Features
 
-**Endpoints propostos:**
-```python
-POST /repositories
-{
-  "name": "meu-projeto",
-  "url": "https://github.com/user/repo.git",
-  "branch": "main"
-}
+### Phase 7: Advanced Search (Q4 2025)
+- [ ] Semantic search improvements
+- [ ] Hybrid search (vector + keyword)
+- [ ] Search result ranking
+- [ ] Query rewriting
+- [ ] Multi-language code search
 
-GET /repositories
-# Lista todos os repositórios indexados
+### Phase 8: Scalability (Q1 2026)
+- [ ] Horizontal scaling support
+- [ ] Redis caching layer
+- [ ] Distributed vector database
+- [ ] Load balancing
+- [ ] Database sharding
 
-POST /retrieve
-{
-  "query": "Como fazer autenticação?",
-  "repositories": ["meu-projeto", "outro-projeto"],  # opcional
-  "top_k": 5
-}
+### Phase 9: Enterprise Features (Q1 2026)
+- [ ] Multi-tenancy support
+- [ ] User management & roles
+- [ ] Usage analytics dashboard
+- [ ] Audit logging
+- [ ] SLA monitoring
 
-DELETE /repositories/{name}
-# Remove repositório indexado
-```
+### Phase 10: Advanced Authentication (Q2 2026)
+- [ ] GitLab support
+- [ ] Bitbucket support
+- [ ] Azure DevOps integration
+- [ ] OAuth2 authentication
+- [ ] SSO (SAML/OIDC)
 
-**Benefícios:**
-- Buscar em múltiplas bases de código
-- Comparar implementações entre projetos
-- Centralizar conhecimento de organização
+### Phase 11: Intelligence Layer (Q2 2026)
+- [ ] Automatic code summarization
+- [ ] Dependency graph generation
+- [ ] Code complexity analysis
+- [ ] Change impact detection
+- [ ] Smart recommendations
 
----
+### Phase 12: Integration Ecosystem (Q3 2026)
+- [ ] VSCode extension
+- [ ] JetBrains plugin
+- [ ] Slack bot integration
+- [ ] Microsoft Teams integration
+- [ ] GitHub App
 
-### 5. Cache de Queries Frequentes
-**Status:** 💡 Ideia  
-**Complexidade:** Baixa  
-**Descrição:**  
-Implementar cache Redis/in-memory para queries repetidas.
+### Phase 13: Advanced Features (Q3 2026)
+- [ ] Incremental updates (git pull instead of full clone)
+- [ ] Multi-repository support
+- [ ] Custom file filters
+- [ ] Webhook support for auto-updates
+- [ ] GraphQL API
 
-**Implementação:**
-- Cache de resultados por hash da query
-- TTL configurável (ex: 1 hora)
-- Invalidação ao atualizar repositório
-- Estatísticas de cache hit/miss
-
-**Benefícios:**
-- Reduz custos de embedding
-- Resposta mais rápida
-- Menor carga na API da OpenAI
-
----
-
-## 🔮 Baixa Prioridade / Futuro
-
-### 6. Interface Web (UI)
-**Status:** 💡 Ideia  
-**Complexidade:** Média  
-**Descrição:**  
-Dashboard web para gerenciar repositórios e fazer buscas.
-
-**Funcionalidades:**
-- Visualizar repositórios indexados
-- Fazer buscas interativas
-- Ver estatísticas de uso
-- Configurar webhooks
-- Logs em tempo real
+### Phase 14: AI Enhancements (Q4 2026)
+- [ ] Fine-tuned embeddings for code
+- [ ] Code-specific LLM integration
+- [ ] Automatic documentation generation
+- [ ] Code explanation engine
+- [ ] Smart Q&A system
 
 ---
 
-### 7. Suporte a Outros Provedores de Embedding
-**Status:** 💡 Ideia  
-**Complexidade:** Média  
-**Descrição:**  
-Permitir usar embeddings alternativos além da OpenAI.
+## 🎯 Success Metrics
 
-**Opções:**
-- Cohere
-- HuggingFace (modelos open-source)
-- Anthropic
-- Embeddings locais (sentence-transformers)
+### Current Status (v0.5.1)
+- Production Readiness: **72/100** 🟢
+- Test Coverage: **High**
+- Security Score: **Good**
+- Performance: **Optimized**
 
-**Benefícios:**
-- Redução de custos
-- Privacidade (modelos locais)
-- Flexibilidade
+### Goals for v1.0.0 (Q4 2025)
+- Production Readiness: **85/100**
+- Test Coverage: **>90%**
+- API Response Time: **<500ms**
+- Uptime: **99.5%**
+- Security: **A+ Grade**
 
----
-
-### 8. Filtros Avançados de Busca
-**Status:** 💡 Ideia  
-**Complexidade:** Baixa  
-**Descrição:**  
-Adicionar filtros para refinar resultados.
-
-**Exemplos:**
-```json
-{
-  "query": "função de autenticação",
-  "top_k": 5,
-  "filters": {
-    "file_extensions": [".py", ".js"],
-    "exclude_paths": ["tests/", "node_modules/"],
-    "max_file_size": 50000,
-    "languages": ["python", "javascript"]
-  }
-}
-```
+### Long-term Goals (2026)
+- Production Readiness: **95/100**
+- Enterprise Ready: **Yes**
+- Multi-cloud Support: **Yes**
+- Global Deployment: **Yes**
 
 ---
 
-### 9. Análise de Código e Métricas
-**Status:** 💡 Ideia  
-**Complexidade:** Alta  
-**Descrição:**  
-Gerar insights sobre o repositório indexado.
+## 📊 Priority Matrix
 
-**Métricas:**
-- Linguagens mais usadas
-- Arquivos mais referenciados em buscas
-- Complexidade de código
-- Documentação coverage
-- Dependências e imports
+### High Priority (Next 3 Months)
+1. Enhanced error handling
+2. Rate limiting
+3. Performance monitoring
+4. Semantic search improvements
+5. Documentation expansion
 
----
+### Medium Priority (3-6 Months)
+1. Horizontal scaling
+2. Caching layer
+3. Multi-tenancy
+4. Usage analytics
+5. GitLab/Bitbucket support
 
-### 10. Exportação e Backup
-**Status:** 💡 Ideia  
-**Complexidade:** Baixa  
-**Descrição:**  
-Permitir exportar índice vetorial e fazer backups.
-
-**Funcionalidades:**
-```bash
-GET /export/{repository_name}
-# Retorna arquivo .tar.gz com ChromaDB
-
-POST /import
-# Importa índice pré-processado
-```
-
-**Benefícios:**
-- Migração entre ambientes
-- Disaster recovery
-- Compartilhar índices processados
+### Low Priority (6-12 Months)
+1. IDE extensions
+2. Chat integrations
+3. GraphQL API
+4. Webhook support
+5. Custom embeddings
 
 ---
 
-## 🛠️ Melhorias Técnicas
+## 🔄 Release Schedule
 
-### 11. Observabilidade e Monitoramento
-**Status:** 📋 Planejado  
-**Complexidade:** Média  
-
-**Implementar:**
-- Métricas Prometheus (`/metrics`)
-- Health checks (`/health`, `/ready`)
-- Structured logging (JSON)
-- Tracing distribuído (OpenTelemetry)
-- Alertas para falhas
+- **v0.6.0** (Nov 2025) - Enhanced Error Handling & Rate Limiting
+- **v0.7.0** (Dec 2025) - Advanced Search Features
+- **v0.8.0** (Jan 2026) - Scalability Improvements
+- **v0.9.0** (Feb 2026) - Enterprise Features
+- **v1.0.0** (Mar 2026) - Production Ready Release
 
 ---
 
-### 12. Testes Automatizados
-**Status:** 📋 Planejado  
-**Complexidade:** Média  
+## 💡 Feature Requests
 
-**Cobertura:**
-- Testes unitários (pytest)
-- Testes de integração
-- Testes de carga (locust)
-- CI/CD com GitHub Actions
+Have an idea? Open an issue with the label `feature-request`!
 
----
-
-### 13. Otimização de Performance
-**Status:** 💡 Ideia  
-**Complexidade:** Variável  
-
-**Melhorias:**
-- Chunking adaptativo por tipo de arquivo
-- Compressão de embeddings
-- Índice HNSW para busca mais rápida
-- Lazy loading de documentos grandes
-- Paralelização de queries
+**Top Community Requests:**
+1. Multi-repository support
+2. Real-time updates via webhooks
+3. Custom embedding models
+4. GraphQL API
+5. IDE plugins
 
 ---
 
-## 📊 Legenda de Status
+## 🤝 How to Contribute
 
-- 📋 **Planejado** - Funcionalidade definida, pronta para implementação
-- 💡 **Ideia** - Conceito inicial, precisa de refinamento
-- 🚧 **Em Desenvolvimento** - Implementação em andamento
-- ✅ **Concluído** - Funcionalidade implementada e testada
-- ⏸️ **Pausado** - Desenvolvimento temporariamente suspenso
-- ❌ **Cancelado** - Funcionalidade descartada
-
----
-
-## ✅ Concluído
-
-### v0.1.0 - Release Estável com Embeddings Locais 🎉
-- ✅ **Embeddings locais por padrão** - Funciona sem chaves de API
-- ✅ **Configuração simplificada** - Um único container via docker run
-- ✅ **Suporte flexível** - Local (gratuito) ou OpenAI (pago)
-- ✅ **Endpoints de monitoramento** - /health, /embedding-info
-- ✅ **Estimativa de custos** em tempo real
-- ✅ **Documentação completa** - Guias claros de uso
-- ✅ **Arquitetura limpa** - Sem docker-compose, apenas Dockerfile
-
-### v0.0.25 - Embeddings Locais e Otimizações
-- ✅ Suporte a embeddings locais (Sentence Transformers, HuggingFace)
-- ✅ Sistema flexível de provedores de embedding
-- ✅ Contagem de tokens otimizada (local vs tiktoken)
-- ✅ Estimativa de custos para diferentes provedores
-- ✅ Modernização para FastAPI com lifespan context manager
-- ✅ Docker otimizado com usuário não-root
-
-### v0.0.24 - Otimização de Rate Limiting
-- ✅ Implementado controle de tokens por minuto (TPM)
-- ✅ Melhorado sistema de batching para respeitar limites da API
-- ✅ Logs mais informativos sobre o progresso do processamento
-
-### v0.0.23 - Controle de Rate Limiting  
-- ✅ Adicionado limite de tokens para evitar exceder quotas da OpenAI
-- ✅ Sistema de batching inteligente para processamento de documentos
-- ✅ Monitoramento de uso de tokens em tempo real
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Suggesting features
+- Reporting bugs
+- Submitting pull requests
+- Code standards
 
 ---
 
-## 🤝 Como Contribuir
+**Note:** This roadmap is subject to change based on community feedback, business priorities, and technical constraints.
 
-Se você quer implementar alguma dessas funcionalidades:
-
-1. Abra uma issue no GitHub referenciando este roadmap
-2. Discuta a abordagem antes de começar
-3. Faça um fork e crie uma branch
-4. Submeta um PR com testes
-
----
-
-**Última atualização:** Outubro 2025  
-**Mantenedor:** @magacho
+**Last Updated:** October 21, 2025

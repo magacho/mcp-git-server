@@ -17,10 +17,10 @@ from report_utils import generate_extensions_report, generate_tokens_report
 from embedding_config import EmbeddingProvider
 from embedding_optimizer import get_optimal_config, get_processing_strategy, estimate_processing_time
 
-# --- CONFIGURAÇÃO A PARTIR DE VARIÁVEIS DE AMBIENTE ---
+# --- CONFIGURATION FROM ENVIRONMENT VARIABLES ---
 REPO_URL = os.environ.get("REPO_URL")
 if not REPO_URL:
-    raise ValueError("A variável de ambiente REPO_URL não foi definida.")
+    raise ValueError("Environment variable REPO_URL is not defined.")
 
 # Configuration flexível de embeddings - padrão local (gratuito)
 EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers")
@@ -58,12 +58,12 @@ server_ready = False  # Flag global
 def index_repository():
     global vectorstore, retriever, total_tokens_generated, server_ready
     
-    # Configurar embeddings baseado na configuração
+    # Configure embeddings based on configuration
     try:
         embeddings = EmbeddingProvider.get_embeddings(EMBEDDING_PROVIDER)
         providers_info = EmbeddingProvider.get_available_providers()
         
-        # Log da configuração escolhida
+        # Log the chosen configuration
         current_provider = EMBEDDING_PROVIDER if EMBEDDING_PROVIDER != "auto" else "auto-detectado"
         print(f">>> Usando embeddings: {current_provider}", flush=True)
         
@@ -73,7 +73,7 @@ def index_repository():
                 print(f">>> Custo: {info.get('cost', 'N/A')}, Qualidade: {info.get('quality', 'N/A')}", flush=True)
     
     except Exception as e:
-        print(f"Erro ao configurar embeddings: {e}", flush=True)
+        print(f"Error configuring embeddings: {e}", flush=True)
         print("Tentando fallback para sentence-transformers...", flush=True)
         embeddings = EmbeddingProvider.get_embeddings("sentence-transformers")
 
@@ -126,7 +126,7 @@ def index_repository():
         avg_doc_size = sum(len(doc.page_content) for doc in chunks) // len(chunks)
         time_estimate = estimate_processing_time(EMBEDDING_PROVIDER, len(chunks), avg_doc_size)
         
-        print(f">>> Configuração otimizada: batch_size={batch_size}, workers={max_workers}", flush=True)
+        print(f">>> Optimized configuration: batch_size={batch_size}, workers={max_workers}", flush=True)
         print(f">>> Tempo estimado: {time_estimate['estimated_time_str']}", flush=True)
         
         is_openai = EMBEDDING_PROVIDER == "openai"
@@ -151,12 +151,12 @@ def index_repository():
                 tokens_this_minute = 0
                 minute_start = time.time()
 
-            print(f"  -> Lote {batch_num}/{total_batches} ({len(batch)} docs, ~{total_chars} chars)...", flush=True)
+            print(f"  -> Batch {batch_num}/{total_batches} ({len(batch)} docs, ~{total_chars} chars)...", flush=True)
             print("     Enviando para OpenAI API...", flush=True)
             try:
                 vectorstore.add_documents(documents=batch)
                 tokens_this_minute += batch_tokens
-                print(f"     ✅ Lote {batch_num} processado! ({batch_tokens} tokens)", flush=True)
+                print(f"     ✅ Batch {batch_num} processado! ({batch_tokens} tokens)", flush=True)
                 return len(batch)
             except Exception as e:
                 print(f"     ❌ ERRO no lote {batch_num}: {e}", flush=True)
@@ -164,16 +164,16 @@ def index_repository():
 
         def send_batch_local(batch, batch_num, total_batches, total_chars):
             """Versão otimizada para embeddings locais"""
-            print(f"  -> Lote {batch_num}/{total_batches} ({len(batch)} docs, ~{total_chars} chars)...", flush=True)
+            print(f"  -> Batch {batch_num}/{total_batches} ({len(batch)} docs, ~{total_chars} chars)...", flush=True)
             try:
                 vectorstore.add_documents(documents=batch)
-                print(f"     ✅ Lote {batch_num} processado!", flush=True)
+                print(f"     ✅ Batch {batch_num} processado!", flush=True)
                 return len(batch)
             except Exception as e:
                 print(f"     ❌ ERRO no lote {batch_num}: {e}", flush=True)
                 return 0
 
-        # Escolher função de processamento
+        # Choose processing function
         send_batch = send_batch_openai if is_openai else send_batch_local
 
         print(f">>> Processing {len(chunks)} documents in {total_batches} batches (batch_size={batch_size}, workers={max_workers})", flush=True)

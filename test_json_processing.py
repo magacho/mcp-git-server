@@ -44,7 +44,7 @@ def test_json_files():
         print("🧪 Testando processamento de arquivos JSON...")
         print("=" * 50)
         
-        # Testar cada arquivo
+        # Test each file
         for filename in test_files.keys():
             filepath = os.path.join(test_dir, filename)
             print(f"\n📄 Testando: {filename}")
@@ -53,10 +53,10 @@ def test_json_files():
                 ext, docs, error = process_file(filepath, ".json")
                 
                 if error:
-                    print(f"❌ Erro: {error}")
+                    print(f"❌ Error: {error}")
                 elif docs:
-                    print(f"✅ Processado com sucesso!")
-                    print(f"   Documentos gerados: {len(docs)}")
+                    print(f"✅ Processed successfully!")
+                    print(f"   Documents generated: {len(docs)}")
                     for i, doc in enumerate(docs):
                         content_preview = doc.page_content[:100].replace('\n', ' ')
                         print(f"   Doc {i+1}: {content_preview}...")

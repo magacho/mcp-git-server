@@ -1,30 +1,30 @@
-# Servidor de Recuperação de Contexto para Repositórios Git (MCP Server)
+# Git Repository Context Retrieval Server (MCP Server)
 
-Este projeto fornece um servidor de API autocontido em Docker que clona um repositório Git público, o indexa usando modelos de embedding da OpenAI e expõe um endpoint para buscar trechos de código e documentação relevantes para uma pergunta em linguagem natural.
+This project provides a self-contained Docker API server that clones a Git repository, indexes it using embedding models, and exposes an endpoint to retrieve relevant code and documentation snippets for natural language questions.
 
-É a peça de "Recuperação" (Retrieval) para um sistema de RAG (Retrieval-Augmented Generation), projetada para alimentar um agente de IA externo (como um workflow no n8n) com o contexto necessário para responder perguntas sobre uma base de código.
+It's the "Retrieval" piece for a RAG (Retrieval-Augmented Generation) system, designed to feed an external AI agent (like an n8n workflow) with the necessary context to answer questions about a codebase.
 
-### ✨ Funcionalidades
+### ✨ Features
 
--   **Embeddings Flexíveis:** Suporte a embeddings locais gratuitos (Sentence Transformers) ou OpenAI (pago)
--   **Configuração Zero:** Funciona sem chaves de API - embeddings locais por padrão
--   **🔐 Repositórios Privados:** Suporte completo a repositórios privados via GitHub PAT ou SSH
--   **Configurável via Variáveis de Ambiente:** Aponte para qualquer repositório Git público ou privado sem alterar o código
--   **Cache Persistente:** O banco de dados vetorial é criado na primeira execução e reutilizado
--   **API Simples:** Endpoints REST para busca e monitoramento
--   **Pronto para Produção:** Container Docker otimizado com usuário não-root
--   **Estimativa de Custos:** Mostra custos estimados para diferentes provedores
+-   **Flexible Embeddings:** Support for free local embeddings (Sentence Transformers) or OpenAI (paid)
+-   **Zero Configuration:** Works without API keys - local embeddings by default
+-   **🔐 Private Repositories:** Full support for private repositories via GitHub PAT or SSH
+-   **Configurable via Environment Variables:** Point to any public or private Git repository without changing code
+-   **Persistent Cache:** Vector database is created on first run and reused
+-   **Simple API:** REST endpoints for search and monitoring
+-   **Production Ready:** Optimized Docker container with non-root user
+-   **Cost Estimation:** Shows estimated costs for different providers
 
-### 🚀 Como Usar
+### 🚀 How to Use
 
-#### Pré-requisitos
+#### Prerequisites
 
-1.  **Docker** instalado e em execução na sua máquina.
-2.  Uma **API Key da OpenAI**. Você pode obter uma em [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+1.  **Docker** installed and running on your machine.
+2.  (Optional) An **OpenAI API Key** for paid embeddings. You can get one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
 
-#### Executando com Docker
+#### Running with Docker
 
-**Modo Gratuito (Padrão - Embeddings Locais):**
+**Free Mode (Default - Local Embeddings):**
 ```bash
 docker run -p 8000:8000 \
   -e REPO_URL="https://github.com/n8n-io/n8n.git" \
@@ -34,147 +34,289 @@ docker run -p 8000:8000 \
   flaviomagacho/mcp-git-server:latest
 ```
 
-**Modo OpenAI (Pago - Alta Qualidade):**
+**OpenAI Mode (Paid - High Quality):**
 ```bash
 docker run -p 8000:8000 \
   -e REPO_URL="https://github.com/n8n-io/n8n.git" \
   -e REPO_BRANCH="master" \
   -e EMBEDDING_PROVIDER="openai" \
-  -e OPENAI_API_KEY="SUA_CHAVE_API_SEGURA" \
+  -e OPENAI_API_KEY="YOUR_SECURE_API_KEY" \
   -v ./mcp_data/chroma_db:/app/chroma_db \
   --name mcp-server \
   flaviomagacho/mcp-git-server:latest
 ```
 
-**🔐 Repositório Privado (com GitHub PAT):**
+**🔐 Private Repository (with GitHub PAT):**
 ```bash
 docker run -p 8000:8000 \
-  -e REPO_URL="https://github.com/seu-usuario/repo-privado.git" \
+  -e REPO_URL="https://github.com/your-username/private-repo.git" \
   -e REPO_BRANCH="main" \
-  -e GITHUB_TOKEN="ghp_sua_chave_pessoal_aqui" \
+  -e GITHUB_TOKEN="ghp_your_personal_token_here" \
   -v ./mcp_data/chroma_db:/app/chroma_db \
   --name mcp-server \
   flaviomagacho/mcp-git-server:latest
 ```
 
-> 📖 Para mais detalhes sobre repositórios privados, consulte [PRIVATE_REPOS.md](PRIVATE_REPOS.md)
+> 📖 For more details about private repositories, see [PRIVATE_REPOS.md](PRIVATE_REPOS.md)
 
-#### Build e Teste Local
+#### Build and Local Testing
 
 ```bash
-# Clone e build
+# Clone the repository
 git clone https://github.com/magacho/mcp-git-server.git
 cd mcp-git-server
+
+# Build the image
 docker build -t mcp-git-server .
 
-# Teste com repositório pequeno
-docker run -p 8000:8000 \
-  -e REPO_URL="https://github.com/octocat/Hello-World.git" \
-  -e REPO_BRANCH="master" \
-  mcp-git-server
-
-# Verificar status (em outro terminal)
-curl http://localhost:8000/health
-
-# Usar com seu repositório
-docker run -p 8000:8000 \
-  -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
-  -e REPO_BRANCH="main" \
-  -v ./data/chroma_db:/app/chroma_db \
-  mcp-git-server
-```
-
-
-### 🔧 Configuração (Variáveis de Ambiente)
-
-#### Obrigatórias
--   `REPO_URL` (obrigatório): A URL `.git` do repositório público a ser indexado.
-
-#### Opcionais - Repositório
--   `REPO_BRANCH`: A branch que será clonada para o MCP Server (padrão: `main`)
-
-#### Opcionais - Embeddings
--   `EMBEDDING_PROVIDER`: Provedor de embeddings (padrão: `sentence-transformers`)
-  - `sentence-transformers` - Gratuito, boa qualidade
-  - `huggingface` - Gratuito, boa qualidade  
-  - `openai` - Pago, alta qualidade
--   `OPENAI_API_KEY`: Chave da API OpenAI (necessária apenas para `openai`)
--   `ST_EMBEDDING_MODEL`: Modelo Sentence Transformers (padrão: `all-MiniLM-L6-v2`)
--   `HF_EMBEDDING_MODEL`: Modelo HuggingFace (padrão: `sentence-transformers/all-MiniLM-L6-v2`)
--   `TOKEN_COUNT_METHOD`: Método de contagem (padrão: `local`)
-
-### 🤖 Provedores de Embedding
-
-#### Sentence Transformers (Padrão - Gratuito) ⭐
-- **Qualidade**: Boa
-- **Custo**: Gratuito
-- **Velocidade**: Média (processamento local)
-- **Configuração**: Automática, sem chaves necessárias
-- **Recomendado para**: Uso geral, desenvolvimento, testes
-
-#### HuggingFace (Gratuito)
-- **Qualidade**: Boa
-- **Custo**: Gratuito
-- **Velocidade**: Média (processamento local)
-- **Configuração**: Automática, sem chaves necessárias
-- **Recomendado para**: Modelos específicos, multilíngue
-
-#### OpenAI (Pago)
-- **Qualidade**: Alta
-- **Custo**: ~$0.0001 por 1K tokens
-- **Velocidade**: Rápida (API)
-- **Configuração**: Requer `OPENAI_API_KEY`
-- **Recomendado para**: Produção com alta qualidade
-
-### � Início  Rápido (Gratuito)
-
-O servidor agora usa **embeddings locais por padrão** - sem necessidade de chaves de API!
-
-```bash
-# Modo padrão - completamente gratuito
+# Run locally
 docker run -p 8000:8000 \
   -e REPO_URL="https://github.com/n8n-io/n8n.git" \
-  -v ./mcp_data/chroma_db:/app/chroma_db \
-  flaviomagacho/mcp-git-server:latest
+  -e REPO_BRANCH="master" \
+  -v ./chroma_db:/app/chroma_db \
+  mcp-git-server
 ```
 
-Acesse: `http://localhost:8000` para verificar o status.
+### 📡 API Endpoints
 
-### 🔌 Endpoints da API
+#### Health Check
+```bash
+GET /health
+```
 
-**`GET /`** - Status do servidor
-**`GET /health`** - Health check
-**`GET /embedding-info`** - Informações sobre configuração de embeddings
-
-**`POST /retrieve`** - Busca por fragmentos de contexto relevantes
-
-**Corpo da Requisição (JSON):**
+Returns server status:
 ```json
 {
-  "query": "Sua pergunta sobre o código aqui",
+  "status": "ready"
+}
+```
+
+#### Retrieve Context
+```bash
+POST /retrieve
+Content-Type: application/json
+
+{
+  "query": "How does authentication work in the application?",
   "top_k": 5
 }
 ```
 
-**Exemplo com `curl`:**
-```bash
-curl -X POST "http://localhost:8000/retrieve" \
--H "Content-Type: application/json" \
--d '{"query": "Como o n8n gerencia credenciais?", "top_k": 3}'
+Returns relevant code snippets:
+```json
+{
+  "results": [
+    {
+      "content": "Code snippet content...",
+      "metadata": {
+        "source": "path/to/file.py"
+      },
+      "relevance_score": 0.95
+    }
+  ],
+  "total_results": 5
+}
 ```
 
-**Verificar configuração:**
+#### Embedding Provider Info
 ```bash
-curl http://localhost:8000/embedding-info
+GET /embedding-info
 ```
+
+Returns information about the current embedding provider:
+```json
+{
+  "provider": "sentence-transformers",
+  "available_providers": {
+    "sentence-transformers": {
+      "available": true,
+      "cost": "Free",
+      "quality": "Good"
+    },
+    "openai": {
+      "available": true,
+      "cost": "$0.0001 per 1K tokens",
+      "quality": "Excellent"
+    }
+  }
+}
+```
+
+### ⚙️ Environment Variables
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `REPO_URL` | Git repository URL (HTTPS or SSH) | - | ✅ Yes |
+| `REPO_BRANCH` | Branch to clone | `main` | No |
+| `GITHUB_TOKEN` | GitHub PAT for private repos | - | No |
+| `EMBEDDING_PROVIDER` | Embedding provider (`sentence-transformers`, `openai`, `huggingface`, `auto`) | `sentence-transformers` | No |
+| `OPENAI_API_KEY` | OpenAI API key (required if provider is openai) | - | Conditional |
+| `TOKEN_COUNT_METHOD` | Token counting method (`local`, `tiktoken`, `auto`) | `auto` | No |
+
+### 🔐 Private Repository Support
+
+Supports two authentication methods:
+
+1. **GitHub Personal Access Token (PAT)** - HTTPS
+   ```bash
+   export GITHUB_TOKEN=ghp_your_token
+   export REPO_URL=https://github.com/user/private-repo.git
+   ```
+
+2. **SSH Keys**
+   ```bash
+   export REPO_URL=git@github.com:user/private-repo.git
+   docker run -v ~/.ssh:/root/.ssh:ro ...
+   ```
+
+See [PRIVATE_REPOS.md](PRIVATE_REPOS.md) for complete documentation.
+
+### 📊 Embedding Providers
+
+| Provider | Cost | Quality | Speed | Use Case |
+|----------|------|---------|-------|----------|
+| `sentence-transformers` | Free | Good | Fast | Development, testing, personal projects |
+| `openai` | $0.0001/1K tokens | Excellent | Medium | Production, high quality requirements |
+| `huggingface` | Free | Variable | Medium | Experimentation, custom models |
+
+### 🏗️ Architecture
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│   Client    │────▶│  FastAPI     │────▶│   Vector    │
+│  (n8n, etc) │     │   Server     │     │  Database   │
+└─────────────┘     └──────────────┘     │  (Chroma)   │
+                            │             └─────────────┘
+                            │
+                            ▼
+                    ┌──────────────┐
+                    │  Embeddings  │
+                    │  (Local/API) │
+                    └──────────────┘
+                            │
+                            ▼
+                    ┌──────────────┐
+                    │ Git Repo     │
+                    │ (Cloned)     │
+                    └──────────────┘
+```
+
+### 🔍 Supported File Types
+
+- **Code:** `.py`, `.js`, `.ts`, `.jsx`, `.tsx`, `.java`, `.cpp`, `.c`, `.h`, `.cs`, `.php`, `.rb`, `.swift`, `.go`, `.rs`
+- **Web:** `.html`, `.css`, `.vue`, `.svelte`
+- **Config:** `.json`, `.yml`, `.yaml`, `.xml`, `.env`
+- **Scripts:** `.sh`, `.bash`, `.sql`
+- **Docs:** `.md`, `.txt`, `.pdf`
+- **Special:** `README`, `LICENSE`, `DOCKERFILE`, `MAKEFILE`, etc.
+
+### 🎯 Use Cases
+
+1. **AI-Powered Code Assistance**
+   - Answer questions about your codebase
+   - Generate documentation from code
+   - Code review assistance
+
+2. **Knowledge Base**
+   - Internal documentation search
+   - Onboarding new developers
+   - Project knowledge retention
+
+3. **CI/CD Integration**
+   - Automated code analysis
+   - Documentation generation
+   - Change impact analysis
+
+4. **Private Projects**
+   - Secure company codebases
+   - Client projects
+   - Proprietary software
+
+### 📚 Documentation
+
+- [PRIVATE_REPOS.md](PRIVATE_REPOS.md) - Private repository setup
+- [QUICK_WINS_IMPLEMENTED.md](QUICK_WINS_IMPLEMENTED.md) - Recent improvements
+- [ROADMAP.md](ROADMAP.md) - Future plans
+- [CHANGELOG.md](CHANGELOG.md) - Version history
+
+### 🧪 Testing
+
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+pytest
+
+# Run with coverage
+pytest --cov=. --cov-report=html
+
+# Run specific test file
+pytest tests/unit/test_models.py -v
+```
+
+### 🛠️ Development
+
+```bash
+# Clone repository
+git clone https://github.com/magacho/mcp-git-server.git
+cd mcp-git-server
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# Run locally
+export REPO_URL=https://github.com/example/repo.git
+python main.py
+
+# Access API
+curl http://localhost:8000/health
+```
+
+### 🐛 Troubleshooting
+
+**Problem:** Server is slow to start
+- **Solution:** First indexing takes time. Subsequent starts are faster (uses cached database).
+
+**Problem:** Out of memory errors
+- **Solution:** Reduce repository size or increase Docker memory limit.
+
+**Problem:** Authentication failed for private repo
+- **Solution:** Check GitHub token has correct permissions (`repo` scope) and is not expired.
+
+**Problem:** Embedding errors
+- **Solution:** Check OPENAI_API_KEY is valid or switch to local embeddings.
+
+### 📄 License
+
+MIT License - See [LICENSE](LICENSE) for details.
+
+### 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Submit a pull request
+
+See [GIT_COMMIT_GUIDE.md](GIT_COMMIT_GUIDE.md) for commit conventions.
+
+### 📧 Contact
+
+- **Author:** Flavio Magacho
+- **Repository:** https://github.com/magacho/mcp-git-server
+- **Issues:** https://github.com/magacho/mcp-git-server/issues
+
+### 🌟 Star History
+
+If this project helped you, please consider giving it a ⭐ on GitHub!
 
 ---
 
-### 🗺️ Roadmap
-
-Confira o [ROADMAP.md](ROADMAP.md) para ver as funcionalidades planejadas.
-
----
-
-*Este projeto foi criado em [10 de Outubro de 2025].*
-
+Made with ❤️ for the developer community
