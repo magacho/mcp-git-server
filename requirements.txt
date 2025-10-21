@@ -28,3 +28,4 @@ langchain-huggingface>=0.0.1
 
 # Logging estruturado
 structlog>=23.1.0
+tenacity==8.2.3

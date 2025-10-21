@@ -1,5 +1,6 @@
 import os
-from fastapi import FastAPI, HTTPException
+import uuid
+from fastapi import FastAPI, HTTPException, Request
 from contextlib import asynccontextmanager
 from collections import defaultdict
 from langchain_chroma import Chroma
@@ -8,6 +9,8 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import asyncio
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import logging
 
 from models import RetrieveRequest, DocumentFragment, RetrieveResponse
 from repo_utils import get_repo_name_from_url, clone_repo
@@ -16,6 +19,13 @@ from token_utils import count_tokens, estimate_embedding_cost
 from report_utils import generate_extensions_report, generate_tokens_report
 from embedding_config import EmbeddingProvider
 from embedding_optimizer import get_optimal_config, get_processing_strategy, estimate_processing_time
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(correlation_id)s] - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # --- CONFIGURATION FROM ENVIRONMENT VARIABLES ---
 REPO_URL = os.environ.get("REPO_URL")
@@ -30,15 +40,68 @@ REPO_NAME = get_repo_name_from_url(REPO_URL)
 LOCAL_REPO_PATH = f"/app/repos/{REPO_NAME}" 
 DB_PATH = f"/app/chroma_db/{REPO_NAME}"
 
+# Middleware for request logging with correlation IDs
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all requests with correlation ID for tracing"""
+    # Generate correlation ID
+    correlation_id = str(uuid.uuid4())
+    request.state.correlation_id = correlation_id
+    
+    # Log request
+    logger.info(
+        f"Request started: {request.method} {request.url.path}",
+        extra={
+            'correlation_id': correlation_id,
+            'method': request.method,
+            'path': request.url.path,
+            'client': request.client.host if request.client else 'unknown'
+        }
+    )
+    
+    start_time = time.time()
+    
+    try:
+        response = await call_next(request)
+        
+        # Log response
+        duration = time.time() - start_time
+        logger.info(
+            f"Request completed: {request.method} {request.url.path} - {response.status_code} ({duration:.3f}s)",
+            extra={
+                'correlation_id': correlation_id,
+                'status_code': response.status_code,
+                'duration': duration
+            }
+        )
+        
+        # Add correlation ID to response headers
+        response.headers["X-Correlation-ID"] = correlation_id
+        return response
+        
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            f"Request failed: {request.method} {request.url.path} - {str(e)} ({duration:.3f}s)",
+            extra={
+                'correlation_id': correlation_id,
+                'error': str(e),
+                'duration': duration
+            }
+        )
+        raise
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    logger.info("Starting application", extra={'correlation_id': 'startup'})
     await asyncio.to_thread(index_repository)
+    logger.info("Application started successfully", extra={'correlation_id': 'startup'})
     yield
-    # Shutdown - cleanup se necessário
-    pass
+    # Shutdown
+    logger.info("Shutting down application", extra={'correlation_id': 'shutdown'})
 
-# --- INICIALIZAÇÃO DA API ---
+# --- API INITIALIZATION ---
 app = FastAPI(
     title="Context Retrieval Server (MCP)",
     description="An API that receives a question and returns relevant snippets from a GitHub repository.",
@@ -136,38 +199,56 @@ def index_repository():
         tokens_this_minute = 0
         minute_start = time.time()
 
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=4, max=10),
+            retry=retry_if_exception_type((ConnectionError, TimeoutError, Exception))
+        )
+        def add_documents_with_retry(batch, batch_num):
+            """Add documents with automatic retry on failure"""
+            try:
+                vectorstore.add_documents(documents=batch)
+                return len(batch)
+            except Exception as e:
+                logger.error(f"Error adding batch {batch_num}: {e}", extra={'correlation_id': 'N/A'})
+                raise
+
         def send_batch_openai(batch, batch_num, total_batches, total_chars):
-            """Versão com rate limiting para OpenAI"""
+            """Version with rate limiting for OpenAI"""
             nonlocal tokens_this_minute, minute_start
             batch_tokens = sum(count_tokens(doc.page_content, "local") for doc in batch)
 
-            # Aguarda se passar do limite de tokens por minuto
+            # Wait if token limit per minute is exceeded
             while tokens_this_minute + batch_tokens > TOKEN_LIMIT_PER_MINUTE:
                 elapsed = time.time() - minute_start
                 if elapsed < 60:
                     wait_time = 60 - elapsed
-                    print(f"     Aguardando {wait_time:.1f}s para respeitar o limite de {TOKEN_LIMIT_PER_MINUTE} tokens/minuto...", flush=True)
+                    print(f"     Waiting {wait_time:.1f}s to respect {TOKEN_LIMIT_PER_MINUTE} tokens/minute limit...", flush=True)
                     time.sleep(wait_time)
                 tokens_this_minute = 0
                 minute_start = time.time()
 
             print(f"  -> Batch {batch_num}/{total_batches} ({len(batch)} docs, ~{total_chars} chars)...", flush=True)
-            print("     Enviando para OpenAI API...", flush=True)
+            print("     Sending to OpenAI API...", flush=True)
             try:
-                vectorstore.add_documents(documents=batch)
+                count = add_documents_with_retry(batch, batch_num)
                 tokens_this_minute += batch_tokens
-                print(f"     ✅ Batch {batch_num} processado! ({batch_tokens} tokens)", flush=True)
-                return len(batch)
+                print(f"     ✅ Batch {batch_num} processed! ({batch_tokens} tokens)", flush=True)
+                return count
             except Exception as e:
-                print(f"     ❌ ERRO no lote {batch_num}: {e}", flush=True)
+                print(f"     ❌ ERROR in batch {batch_num} after retries: {e}", flush=True)
                 return 0
 
         def send_batch_local(batch, batch_num, total_batches, total_chars):
-            """Versão otimizada para embeddings locais"""
+            """Optimized version for local embeddings"""
             print(f"  -> Batch {batch_num}/{total_batches} ({len(batch)} docs, ~{total_chars} chars)...", flush=True)
             try:
-                vectorstore.add_documents(documents=batch)
-                print(f"     ✅ Batch {batch_num} processado!", flush=True)
+                count = add_documents_with_retry(batch, batch_num)
+                print(f"     ✅ Batch {batch_num} processed!", flush=True)
+                return count
+            except Exception as e:
+                print(f"     ❌ ERROR in batch {batch_num} after retries: {e}", flush=True)
+                return 0
                 return len(batch)
             except Exception as e:
                 print(f"     ❌ ERRO no lote {batch_num}: {e}", flush=True)
@@ -219,15 +300,62 @@ def read_root():
 
 @app.get("/health", summary="Health Check")
 def health_check():
-    return {
+    """
+    Comprehensive health check endpoint
+    Returns detailed status of all system components
+    """
+    health_status = {
         "status": "healthy" if server_ready else "initializing",
         "repository": REPO_NAME,
-        "ready": server_ready
+        "ready": server_ready,
+        "timestamp": time.time()
     }
+    
+    # Check vectorstore
+    try:
+        if vectorstore is not None:
+            # Try to get collection info
+            collection = vectorstore._collection
+            doc_count = collection.count() if hasattr(collection, 'count') else 0
+            health_status["vectorstore"] = {
+                "status": "healthy",
+                "document_count": doc_count
+            }
+        else:
+            health_status["vectorstore"] = {
+                "status": "not_initialized"
+            }
+    except Exception as e:
+        health_status["vectorstore"] = {
+            "status": "error",
+            "error": str(e)
+        }
+    
+    # Check embedding provider
+    try:
+        health_status["embedding_provider"] = {
+            "provider": EMBEDDING_PROVIDER,
+            "status": "configured"
+        }
+    except Exception as e:
+        health_status["embedding_provider"] = {
+            "status": "error",
+            "error": str(e)
+        }
+    
+    # Overall health status
+    if not server_ready:
+        health_status["status"] = "initializing"
+    elif health_status.get("vectorstore", {}).get("status") != "healthy":
+        health_status["status"] = "degraded"
+    else:
+        health_status["status"] = "healthy"
+    
+    return health_status
 
-@app.get("/embedding-info", summary="Informações sobre Embeddings")
+@app.get("/embedding-info", summary="Embedding Information")
 def embedding_info():
-    """Retorna informações sobre os provedores de embedding disponíveis"""
+    """Returns information about available embedding providers"""
     providers = EmbeddingProvider.get_available_providers()
     return {
         "current_provider": EMBEDDING_PROVIDER,
@@ -236,15 +364,35 @@ def embedding_info():
         "total_tokens_processed": total_tokens_generated if server_ready else 0
     }
 
-@app.post("/retrieve", response_model=RetrieveResponse, summary="Busca fragmentos de contexto")
-def retrieve_context(request: RetrieveRequest):
+@app.post("/retrieve", response_model=RetrieveResponse, summary="Retrieve context fragments")
+async def retrieve_context(request: Request, req: RetrieveRequest):
+    """
+    Retrieve relevant code and documentation fragments for a query
+    """
+    correlation_id = getattr(request.state, 'correlation_id', 'unknown')
+    
     if not server_ready:
-        raise HTTPException(status_code=503, detail="O servidor ainda está inicializando. Tente novamente em alguns segundos.")
+        logger.warning(
+            "Retrieve request rejected - server not ready",
+            extra={'correlation_id': correlation_id}
+        )
+        raise HTTPException(
+            status_code=503, 
+            detail="Server is still initializing. Please try again in a few seconds."
+        )
 
     try:
-        print(f"Recebida busca por: '{request.query}' com top_k={request.top_k}", flush=True)
-        retriever.search_kwargs['k'] = request.top_k
-        relevant_docs = retriever.invoke(request.query)
+        logger.info(
+            f"Processing query: '{req.query}' with top_k={req.top_k}",
+            extra={
+                'correlation_id': correlation_id,
+                'query_length': len(req.query),
+                'top_k': req.top_k
+            }
+        )
+        
+        retriever.search_kwargs['k'] = req.top_k
+        relevant_docs = retriever.invoke(req.query)
 
         response_fragments = [
             DocumentFragment(
@@ -253,9 +401,26 @@ def retrieve_context(request: RetrieveRequest):
             ) 
             for doc in relevant_docs
         ]
+        
+        logger.info(
+            f"Query processed successfully - returned {len(response_fragments)} fragments",
+            extra={
+                'correlation_id': correlation_id,
+                'results_count': len(response_fragments)
+            }
+        )
 
-        return RetrieveResponse(query=request.query, fragments=response_fragments)
+        return RetrieveResponse(query=req.query, fragments=response_fragments)
     
     except Exception as e:
-        print(f"Erro durante a busca: {e}", flush=True)
-        raise HTTPException(status_code=500, detail=f"Erro interno durante a busca: {str(e)}")
+        logger.error(
+            f"Error during retrieval: {str(e)}",
+            extra={
+                'correlation_id': correlation_id,
+                'error': str(e)
+            }
+        )
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Internal error during retrieval: {str(e)}"
+        )
