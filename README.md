@@ -8,7 +8,8 @@ Este projeto fornece um servidor de API autocontido em Docker que clona um repos
 
 -   **Embeddings Flexíveis:** Suporte a embeddings locais gratuitos (Sentence Transformers) ou OpenAI (pago)
 -   **Configuração Zero:** Funciona sem chaves de API - embeddings locais por padrão
--   **Configurável via Variáveis de Ambiente:** Aponte para qualquer repositório Git público sem alterar o código
+-   **🔐 Repositórios Privados:** Suporte completo a repositórios privados via GitHub PAT ou SSH
+-   **Configurável via Variáveis de Ambiente:** Aponte para qualquer repositório Git público ou privado sem alterar o código
 -   **Cache Persistente:** O banco de dados vetorial é criado na primeira execução e reutilizado
 -   **API Simples:** Endpoints REST para busca e monitoramento
 -   **Pronto para Produção:** Container Docker otimizado com usuário não-root
@@ -44,6 +45,19 @@ docker run -p 8000:8000 \
   --name mcp-server \
   flaviomagacho/mcp-git-server:latest
 ```
+
+**🔐 Repositório Privado (com GitHub PAT):**
+```bash
+docker run -p 8000:8000 \
+  -e REPO_URL="https://github.com/seu-usuario/repo-privado.git" \
+  -e REPO_BRANCH="main" \
+  -e GITHUB_TOKEN="ghp_sua_chave_pessoal_aqui" \
+  -v ./mcp_data/chroma_db:/app/chroma_db \
+  --name mcp-server \
+  flaviomagacho/mcp-git-server:latest
+```
+
+> 📖 Para mais detalhes sobre repositórios privados, consulte [PRIVATE_REPOS.md](PRIVATE_REPOS.md)
 
 #### Build e Teste Local
 

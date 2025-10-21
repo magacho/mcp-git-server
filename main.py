@@ -85,7 +85,12 @@ def index_repository():
 
         print("\n--- ETAPA 1 de 3: Clonando e Carregando Repositório ---", flush=True)
         repo_branch = os.getenv("REPO_BRANCH", "main")
-        clone_repo(REPO_URL, repo_branch, LOCAL_REPO_PATH)
+        github_token = os.getenv("GITHUB_TOKEN")  # Support for private repositories
+        
+        if github_token:
+            print(">>> GitHub token detected - will use for authentication", flush=True)
+        
+        clone_repo(REPO_URL, repo_branch, LOCAL_REPO_PATH, github_token=github_token)
 
         documents = list(load_documents_robustly(LOCAL_REPO_PATH, extensoes_processadas, extensoes_descartadas))
         if not documents:
