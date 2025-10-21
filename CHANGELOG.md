@@ -3,6 +3,41 @@
 
 **Release Date:** 2025-10-16
 
+# Release Notes - v0.5.1
+
+**Release Date:** 2025-10-21
+
+**Full Changelog:** [`v0.5.0...v0.5.1`](https://github.com/magacho/mcp-git-server/compare/v0.5.0...v0.5.1)
+
+## 📚 Documentation
+
+- docs: update CHANGELOG for v0.5.0 (0919b8c)
+
+## 🔧 Other Changes
+
+- refactor: translate all code to English (i18n) (53b666a)
+
+## 🚀 Installation
+
+### Docker (Recommended)
+
+```bash
+# Modo gratuito (embeddings locais)
+ docker run -p 8000:8000 \
+   -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
+   -v ./data:/app/chroma_db \
+   flaviomagacho/mcp-git-server:v0.5.1
+```
+
+## 📊 Summary
+
+- **Total commits:** 2
+- **Contributors:** @magacho
+
+
+---
+
+
 # Release Notes - v0.5.0
 
 **Release Date:** 2025-10-21
