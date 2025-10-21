@@ -3,6 +3,41 @@
 
 **Release Date:** 2025-10-16
 
+# Release Notes - v0.4.0
+
+**Release Date:** 2025-10-21
+
+**Full Changelog:** [`v0.3.0...v0.4.0`](https://github.com/magacho/mcp-git-server/compare/v0.3.0...v0.4.0)
+
+## 🐛 Bug Fixes
+
+- fix: update upload-artifact action from v3 to v4 (57eb137)
+
+## 📚 Documentation
+
+- docs: update CHANGELOG for v0.3.0 (4bab62a)
+
+## 🚀 Installation
+
+### Docker (Recommended)
+
+```bash
+# Modo gratuito (embeddings locais)
+ docker run -p 8000:8000 \
+   -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
+   -v ./data:/app/chroma_db \
+   flaviomagacho/mcp-git-server:v0.4.0
+```
+
+## 📊 Summary
+
+- **Total commits:** 2
+- **Contributors:** @magacho
+
+
+---
+
+
 # Release Notes - v0.3.0
 
 **Release Date:** 2025-10-21
