@@ -1,54 +1,54 @@
-# Testes - MCP Git Server
+# Tests - MCP Git Server
 
-Este diretório contém os testes automatizados do projeto.
+This directory contains the automated tests for the project.
 
-## Estrutura
+## Structure
 
 ```
 tests/
-├── conftest.py              # Configuração global de testes
-├── unit/                    # Testes unitários
-│   ├── test_models.py       # Testes para models.py
-│   ├── test_token_utils.py  # Testes para token_utils.py
-│   └── test_embedding_config.py  # Testes para embedding_config.py
-└── integration/             # Testes de integração
-    └── test_api.py          # Testes de API endpoints
+├── conftest.py              # Global test configuration
+├── unit/                    # Unit tests
+│   ├── test_models.py       # Tests for models.py
+│   ├── test_token_utils.py  # Tests for token_utils.py
+│   └── test_embedding_config.py  # Tests for embedding_config.py
+└── integration/             # Integration tests
+    └── test_api.py          # API endpoint tests
 ```
 
-## Executando os Testes
+## Running Tests
 
-### Instalar dependências
+### Install dependencies
 
 ```bash
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-### Executar todos os testes
+### Run all tests
 
 ```bash
 pytest
 ```
 
-### Executar com cobertura
+### Run with coverage
 
 ```bash
 pytest --cov=. --cov-report=html
 ```
 
-### Executar apenas testes unitários
+### Run only unit tests
 
 ```bash
 pytest tests/unit/
 ```
 
-### Executar apenas testes de integração
+### Run only integration tests
 
 ```bash
 pytest tests/integration/
 ```
 
-### Executar teste específico
+### Run specific test
 
 ```bash
 pytest tests/unit/test_models.py::TestRetrieveRequest::test_valid_request
@@ -56,7 +56,7 @@ pytest tests/unit/test_models.py::TestRetrieveRequest::test_valid_request
 
 ## Coverage
 
-Após executar os testes com cobertura, abra o relatório HTML:
+After running tests with coverage, open the HTML report:
 
 ```bash
 open htmlcov/index.html  # macOS
@@ -64,18 +64,18 @@ xdg-open htmlcov/index.html  # Linux
 start htmlcov/index.html  # Windows
 ```
 
-## Convenções
+## Conventions
 
-- Nomes de arquivos de teste devem começar com `test_`
-- Nomes de funções de teste devem começar com `test_`
-- Classes de teste devem começar com `Test`
-- Use fixtures definidas em `conftest.py` para reutilizar código
-- Marque testes lentos com `@pytest.mark.slow`
+- Test file names should start with `test_`
+- Test function names should start with `test_`
+- Test classes should start with `Test`
+- Use fixtures defined in `conftest.py` to reuse code
+- Mark slow tests with `@pytest.mark.slow`
 
-## Próximos Passos
+## Next Steps
 
-- [ ] Adicionar mais testes unitários para document_loader.py
-- [ ] Adicionar testes de integração completos
-- [ ] Adicionar testes de performance
-- [ ] Adicionar testes de segurança
-- [ ] Aumentar cobertura para 80%+
+- [ ] Add more unit tests for document_loader.py
+- [ ] Add complete integration tests
+- [ ] Add performance tests
+- [ ] Add security tests
+- [ ] Increase coverage to 80%+

@@ -5,31 +5,31 @@
 **Full Changelog:** [`[PREVIOUS_TAG]...[CURRENT_TAG]`](https://github.com/magacho/mcp-git-server/compare/[PREVIOUS_TAG]...[CURRENT_TAG])
 
 ## 🚨 Breaking Changes
-<!-- Mudanças que quebram compatibilidade -->
+<!-- Changes that break compatibility -->
 - 
 
 ## ✨ New Features
-<!-- Novas funcionalidades -->
+<!-- New features -->
 - 
 
 ## 🐛 Bug Fixes
-<!-- Correções de bugs -->
+<!-- Bug fixes -->
 - 
 
 ## ♻️ Code Refactoring
-<!-- Refatorações de código -->
+<!-- Code refactoring -->
 - 
 
 ## 🧪 Tests
-<!-- Melhorias em testes -->
+<!-- Test improvements -->
 - 
 
 ## 📚 Documentation
-<!-- Atualizações de documentação -->
+<!-- Documentation updates -->
 - 
 
 ## 🔧 Other Changes
-<!-- Outras mudanças (chores, build, etc.) -->
+<!-- Other changes (chores, build, etc.) -->
 - 
 
 ## 🚀 Installation
@@ -37,20 +37,20 @@
 ### Docker (Recommended)
 
 ```bash
-# Modo gratuito (embeddings locais)
+# Free mode (local embeddings)
 docker run -p 8000:8000 \
-  -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
+  -e REPO_URL="https://github.com/your-username/your-repo.git" \
   -v ./data:/app/chroma_db \
   flaviomagacho/mcp-git-server:v[VERSION]
 ```
 
-### Docker com OpenAI (Pago)
+### Docker with OpenAI (Paid)
 
 ```bash
 docker run -p 8000:8000 \
-  -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
+  -e REPO_URL="https://github.com/your-username/your-repo.git" \
   -e EMBEDDING_PROVIDER="openai" \
-  -e OPENAI_API_KEY="sk-sua-chave" \
+  -e OPENAI_API_KEY="sk-your-key" \
   -v ./data:/app/chroma_db \
   flaviomagacho/mcp-git-server:v[VERSION]
 ```
@@ -64,24 +64,24 @@ docker run -p 8000:8000 \
 
 - **Docker Image:** `flaviomagacho/mcp-git-server:v[VERSION]`
 - **Base Image:** Python 3.12-slim
-- **Default Embeddings:** Sentence Transformers (gratuito)
+- **Default Embeddings:** Sentence Transformers (free)
 - **Supported Languages:** Python, Java, JavaScript, TypeScript, Markdown, HTML, CSS, JSON, PDF
 
 ## 🆕 What's New in This Release
 
-<!-- Destaque principal da release -->
+<!-- Highlight main feature of the release -->
 
 ## 🔄 Migration Guide
 
-<!-- Se houver breaking changes, explicar como migrar -->
+<!-- If there are breaking changes, explain how to migrate -->
 
 ## 🐛 Known Issues
 
-<!-- Issues conhecidos nesta versão -->
+<!-- Known issues in this version -->
 
 ## 🙏 Contributors
 
-<!-- Agradecer contribuidores -->
+<!-- Thank contributors -->
 
 ---
 
