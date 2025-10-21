@@ -1,21 +1,34 @@
-def gerar_relatorio_extensoes(extensoes_processadas, extensoes_descartadas):
-    print("\n===== RELATÓRIO DE EXTENSÕES DE ARQUIVO =====")
-    print("Processados:")
-    if extensoes_processadas:
-        for ext, count in sorted(extensoes_processadas.items(), key=lambda x: -x[1]):
-            print(f"  {ext or '[sem extensão]'}: {count}")
+def generate_extensions_report(processed_extensions, discarded_extensions):
+    """
+    Generate a report of processed and discarded file extensions
+    
+    Args:
+        processed_extensions: Dictionary of processed file extensions
+        discarded_extensions: Dictionary of discarded file extensions
+    """
+    print("\n===== FILE EXTENSIONS REPORT =====")
+    print("Processed:")
+    if processed_extensions:
+        for ext, count in sorted(processed_extensions.items(), key=lambda x: -x[1]):
+            print(f"  {ext or '[no extension]'}: {count}")
     else:
-        print("  Nenhum arquivo processado.")
+        print("  No files processed.")
 
-    print("\nDescartados:")
-    if extensoes_descartadas:
-        for ext, count in sorted(extensoes_descartadas.items(), key=lambda x: -x[1]):
-            print(f"  {ext or '[sem extensão]'}: {count}")
+    print("\nDiscarded:")
+    if discarded_extensions:
+        for ext, count in sorted(discarded_extensions.items(), key=lambda x: -x[1]):
+            print(f"  {ext or '[no extension]'}: {count}")
     else:
-        print("  Nenhum arquivo descartado.")
-    print("=============================================\n")
+        print("  No files discarded.")
+    print("=" * 40 + "\n")
 
-def gerar_relatorio_tokens(total_tokens_gerados):
-    print(f"===== RELATÓRIO DE TOKENS =====")
-    print(f"Total estimado de tokens enviados para embeddings: {total_tokens_gerados}")
-    print("="*40)
+def generate_tokens_report(total_tokens_generated):
+    """
+    Generate a report of total tokens generated
+    
+    Args:
+        total_tokens_generated: Total number of tokens
+    """
+    print(f"===== TOKENS REPORT =====")
+    print(f"Total estimated tokens sent for embeddings: {total_tokens_generated}")
+    print("=" * 40)

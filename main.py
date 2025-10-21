@@ -12,8 +12,8 @@ import asyncio
 from models import RetrieveRequest, DocumentFragment, RetrieveResponse
 from repo_utils import get_repo_name_from_url, clone_repo
 from document_loader import load_documents_robustly, EXTENSOES_SUPORTADAS
-from token_utils import contar_tokens, estimar_custo_embeddings
-from report_utils import gerar_relatorio_extensoes, gerar_relatorio_tokens
+from token_utils import count_tokens, estimate_embedding_cost
+from report_utils import generate_extensions_report, generate_tokens_report
 from embedding_config import EmbeddingProvider
 from embedding_optimizer import get_optimal_config, get_processing_strategy, estimate_processing_time
 
@@ -22,7 +22,7 @@ REPO_URL = os.environ.get("REPO_URL")
 if not REPO_URL:
     raise ValueError("A variável de ambiente REPO_URL não foi definida.")
 
-# Configuração flexível de embeddings - padrão local (gratuito)
+# Configuration flexível de embeddings - padrão local (gratuito)
 EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers")
 TOKEN_COUNT_METHOD = os.getenv("TOKENIZER_MODE", os.getenv("TOKEN_COUNT_METHOD", "local"))
 
@@ -40,8 +40,8 @@ async def lifespan(app: FastAPI):
 
 # --- INICIALIZAÇÃO DA API ---
 app = FastAPI(
-    title="Servidor de Recuperação de Contexto (MCP)",
-    description="Uma API que recebe uma pergunta e retorna trechos relevantes de um repositório GitHub.",
+    title="Context Retrieval Server (MCP)",
+    description="An API that receives a question and returns relevant snippets from a GitHub repository.",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -49,14 +49,14 @@ app = FastAPI(
 vectorstore = None
 retriever = None
 
-extensoes_processadas = defaultdict(int)
-extensoes_descartadas = defaultdict(int)
-total_tokens_gerados = 0
+processed_extensions = defaultdict(int)
+discarded_extensions = defaultdict(int)
+total_tokens_generated = 0
 
 server_ready = False  # Flag global
 
 def index_repository():
-    global vectorstore, retriever, total_tokens_gerados, server_ready
+    global vectorstore, retriever, total_tokens_generated, server_ready
     
     # Configurar embeddings baseado na configuração
     try:
@@ -79,11 +79,11 @@ def index_repository():
 
     if not os.path.exists(DB_PATH):
         print("\n" + "="*60, flush=True)
-        print("INICIANDO PROCESSO DE INDEXAÇÃO (PRIMEIRA EXECUÇÃO)", flush=True)
-        print(f"Repositório: {REPO_NAME}", flush=True)
+        print("STARTING INDEXATION PROCESS (FIRST RUN)", flush=True)
+        print(f"Repository: {REPO_NAME}", flush=True)
         print("="*60, flush=True)
 
-        print("\n--- ETAPA 1 de 3: Clonando e Carregando Repositório ---", flush=True)
+        print("\n--- STEP 1 of 3: Cloning and Loading Repository ---", flush=True)
         repo_branch = os.getenv("REPO_BRANCH", "main")
         github_token = os.getenv("GITHUB_TOKEN")  # Support for private repositories
         
@@ -92,33 +92,33 @@ def index_repository():
         
         clone_repo(REPO_URL, repo_branch, LOCAL_REPO_PATH, github_token=github_token)
 
-        documents = list(load_documents_robustly(LOCAL_REPO_PATH, extensoes_processadas, extensoes_descartadas))
+        documents = list(load_documents_robustly(LOCAL_REPO_PATH, processed_extensions, discarded_extensions))
         if not documents:
-            raise Exception("Nenhum documento foi carregado. Verifique os padrões de arquivo.")
+            raise Exception("No documents loaded. Check file patterns.")
 
-        print(f">>> SUCESSO: Etapa 1 concluída.", flush=True)
+        print(f">>> SUCCESS: Step 1 completed.", flush=True)
 
-        print("\n--- ETAPA 2 de 3: Dividindo Documentos ---", flush=True)
+        print("\n--- STEP 2 of 3: Splitting Documents ---", flush=True)
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
         chunks = text_splitter.split_documents(documents)
-        print(f">>> SUCESSO: Documentos divididos em {len(chunks)} pedaços.", flush=True)
+        print(f">>> SUCCESS: Documents split into {len(chunks)} chunks.", flush=True)
 
-        # Contagem eficiente de tokens
-        print(">>> Calculando tokens...", flush=True)
-        total_tokens_gerados = sum(contar_tokens(doc.page_content, TOKEN_COUNT_METHOD) for doc in chunks)
+        # Efficient counting de tokens
+        print(">>> Calculating tokens...", flush=True)
+        total_tokens_generated = sum(count_tokens(doc.page_content, TOKEN_COUNT_METHOD) for doc in chunks)
         
-        # Estimativa de custo
-        custo_info = estimar_custo_embeddings(total_tokens_gerados, EMBEDDING_PROVIDER)
-        print(f">>> Total estimado de tokens: {total_tokens_gerados}", flush=True)
-        print(f">>> Custo estimado: {custo_info}", flush=True)
+        # Cost estimation
+        cost_info = estimate_embedding_cost(total_tokens_generated, EMBEDDING_PROVIDER)
+        print(f">>> Total estimated tokens: {total_tokens_generated}", flush=True)
+        print(f">>> Estimated cost: {cost_info}", flush=True)
 
-        print("\n--- ETAPA 3 de 3: Gerando e Armazenando Embeddings ---", flush=True)
+        print("\n--- STEP 3 of 3: Generating and Storing Embeddings ---", flush=True)
         vectorstore = Chroma(
             persist_directory=DB_PATH,
             embedding_function=embeddings
         )
 
-        # Configuração otimizada baseada no provedor e recursos
+        # Configuration otimizada baseada no provedor e recursos
         batch_size, max_workers = get_optimal_config(EMBEDDING_PROVIDER, len(chunks))
         strategy = get_processing_strategy(EMBEDDING_PROVIDER)
         
@@ -139,7 +139,7 @@ def index_repository():
         def send_batch_openai(batch, batch_num, total_batches, total_chars):
             """Versão com rate limiting para OpenAI"""
             nonlocal tokens_this_minute, minute_start
-            batch_tokens = sum(contar_tokens(doc.page_content, "local") for doc in batch)
+            batch_tokens = sum(count_tokens(doc.page_content, "local") for doc in batch)
 
             # Aguarda se passar do limite de tokens por minuto
             while tokens_this_minute + batch_tokens > TOKEN_LIMIT_PER_MINUTE:
@@ -176,7 +176,7 @@ def index_repository():
         # Escolher função de processamento
         send_batch = send_batch_openai if is_openai else send_batch_local
 
-        print(f">>> Processando {len(chunks)} documentos em {total_batches} lotes (batch_size={batch_size}, workers={max_workers})", flush=True)
+        print(f">>> Processing {len(chunks)} documents in {total_batches} batches (batch_size={batch_size}, workers={max_workers})", flush=True)
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
@@ -191,30 +191,30 @@ def index_repository():
                 pass
 
         print("\n" + "="*60, flush=True)
-        print("INDEXAÇÃO CONCLUÍDA COM SUCESSO!", flush=True)
+        print("INDEXATION COMPLETED SUCCESSFULLY!", flush=True)
         print("="*60 + "\n", flush=True)
 
-        gerar_relatorio_extensoes(extensoes_processadas, extensoes_descartadas)
-        gerar_relatorio_tokens(total_tokens_gerados)
+        generate_extensions_report(processed_extensions, discarded_extensions)
+        generate_tokens_report(total_tokens_generated)
     else:
         print("\n" + "="*60, flush=True)
         print(f"Carregando base de dados vetorial existente para '{REPO_NAME}'...", flush=True)
         vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
-        print(">>> SUCESSO: Base de dados carregada da memória.", flush=True)
+        print(">>> SUCCESS: Database loaded from memory.", flush=True)
         print("="*60 + "\n", flush=True)
-        gerar_relatorio_extensoes(extensoes_processadas, extensoes_descartadas)
+        generate_extensions_report(processed_extensions, discarded_extensions)
 
     retriever = vectorstore.as_retriever()
-    print(f"Servidor pronto. Repositório '{REPO_NAME}' está carregado e pronto para consultas.", flush=True)
+    print(f"Server ready. Repository '{REPO_NAME}' is loaded and ready for queries.", flush=True)
     server_ready = True
-    print(">>> Servidor ACEITANDO conexões HTTP na porta 8000.", flush=True)
+    print(">>> Server ACCEPTING HTTP connections on port 8000.", flush=True)
 
 # Event handler removido - agora usando lifespan
 
 @app.get("/", summary="Verificação de Status")
 def read_root():
     if not server_ready:
-        return {"status": "Servidor inicializando, aguarde..."}
+        return {"status": "Server initializing, please wait..."}
     return {"status": f"MCP Server online para o repositório: {REPO_NAME}"}
 
 @app.get("/health", summary="Health Check")
@@ -233,7 +233,7 @@ def embedding_info():
         "current_provider": EMBEDDING_PROVIDER,
         "token_count_method": TOKEN_COUNT_METHOD,
         "available_providers": providers,
-        "total_tokens_processed": total_tokens_gerados if server_ready else 0
+        "total_tokens_processed": total_tokens_generated if server_ready else 0
     }
 
 @app.post("/retrieve", response_model=RetrieveResponse, summary="Busca fragmentos de contexto")
