@@ -3,6 +3,49 @@
 
 **Release Date:** 2025-10-16
 
+# Release Notes - v0.7.0
+
+**Release Date:** 2025-10-23
+
+**Full Changelog:** [`v0.6.0...v0.7.0`](https://github.com/magacho/mcp-git-server/compare/v0.6.0...v0.7.0)
+
+## 🐛 Bug Fixes
+
+- fix: migrate Pydantic validators to V2 and fix validation logic (6b5ee9e)
+- fix: translate token_utils.py function names to English (cb2d22c)
+
+## 📚 Documentation
+
+- i18n: translate remaining documentation to English (dff570b)
+- docs: update ROADMAP and CHANGELOG for v0.6.0 (77cf5d2)
+- docs: update CHANGELOG for v0.6.0 (05b821a)
+
+## 🔧 Other Changes
+
+- i18n: complete translation of remaining Portuguese code to English (8aa8dde)
+- i18n: translate remaining Portuguese messages to English (49d5272)
+
+## 🚀 Installation
+
+### Docker (Recommended)
+
+```bash
+# Modo gratuito (embeddings locais)
+ docker run -p 8000:8000 \
+   -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
+   -v ./data:/app/chroma_db \
+   flaviomagacho/mcp-git-server:v0.7.0
+```
+
+## 📊 Summary
+
+- **Total commits:** 7
+- **Contributors:** @magacho
+
+
+---
+
+
 # Release Notes - v0.6.0
 
 **Release Date:** 2025-10-21
