@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Teste rápido da configuração padrão
+Quick test of default configuration
 """
 import os
 from embedding_config import EmbeddingProvider
@@ -8,7 +8,7 @@ from embedding_config import EmbeddingProvider
 def test_default_config():
     print("🧪 Testing default configuration...")
     
-    # Remove OPENAI_API_KEY if it exists to test default
+    # Remove OPENAI_API_KEY if exists to test default
     original_key = os.environ.pop('OPENAI_API_KEY', None)
     
     try:

@@ -121,15 +121,15 @@ def estimate_processing_time(provider: str, total_documents: int, avg_doc_size: 
         cpu_count = os.cpu_count() or 1
         memory_gb = psutil.virtual_memory().total / (1024**3)
         
-        # Fator de performance baseado em recursos
+        # Performance factor based on resources
         if memory_gb >= 16 and cpu_count >= 8:
-            time_per_doc = 0.1  # Hardware potente
+            time_per_doc = 0.1  # Powerful hardware
         elif memory_gb >= 8 and cpu_count >= 4:
-            time_per_doc = 0.2  # Hardware médio
+            time_per_doc = 0.2  # Medium hardware
         else:
-            time_per_doc = 0.4  # Hardware básico
+            time_per_doc = 0.4  # Basic hardware
             
-        # Ajustar baseado no tamanho dos documentos
+        # Adjust based on document size
         if avg_doc_size > 5000:
             time_per_doc *= 1.5
         elif avg_doc_size > 10000:
@@ -138,18 +138,18 @@ def estimate_processing_time(provider: str, total_documents: int, avg_doc_size: 
         estimated_seconds = total_documents * time_per_doc
         
     else:
-        # Outros provedores: estimativa conservadora
+        # Other providers: conservative estimate
         estimated_seconds = total_documents * 0.3
     
-    # Converter para formato legível
+    # Convert to readable format
     if estimated_seconds < 60:
-        time_str = f"{estimated_seconds:.0f} segundos"
+        time_str = f"{estimated_seconds:.0f} seconds"
     elif estimated_seconds < 3600:
         minutes = estimated_seconds / 60
-        time_str = f"{minutes:.1f} minutos"
+        time_str = f"{minutes:.1f} minutes"
     else:
         hours = estimated_seconds / 3600
-        time_str = f"{hours:.1f} horas"
+        time_str = f"{hours:.1f} hours"
     
     return {
         "estimated_seconds": estimated_seconds,
