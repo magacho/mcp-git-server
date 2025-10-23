@@ -1,14 +1,14 @@
 # MCP Git Server - Product Roadmap
 
 **Last Updated:** October 23, 2025
-**Current Version:** v0.7.0
-**Test Coverage:** 20% (Target: 70%)
+**Current Version:** v0.8.0
+**Test Coverage:** 25% (Target: 70%)
 
 ---
 
 ## 🎯 Vision
 
-Build a production-ready, high-performance semantic code search engine that makes any Git repository instantly searchable using natural language queries.
+Build a production-ready, high-performance semantic code search engine that makes any Git repository instantly searchable using natural language queries, supporting multiple Git providers.
 
 ---
 
@@ -18,6 +18,9 @@ Build a production-ready, high-performance semantic code search engine that make
 - ✅ Core semantic search functionality
 - ✅ OpenAI and local embedding support
 - ✅ Private GitHub repository support
+- ✅ **Private Bitbucket repository support (v0.8.0)** ⭐
+- ✅ **Multi-provider authentication (GitHub, Bitbucket, GitLab)** ⭐
+- ✅ **Automatic provider detection** ⭐
 - ✅ Docker containerization
 - ✅ CI/CD pipeline with security scans
 - ✅ Input validation (100% coverage)
