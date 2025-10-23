@@ -5,7 +5,7 @@ Script para testar e comparar diferentes provedores de embedding
 import os
 import time
 from embedding_config import EmbeddingProvider
-from token_utils import contar_tokens, estimar_custo_embeddings
+from token_utils import count_tokens, estimate_embedding_cost
 
 def test_embedding_providers():
     """Tests all available providers"""
@@ -87,7 +87,7 @@ def test_token_counting():
         for method in methods:
             try:
                 start_time = time.time()
-                tokens = contar_tokens(text, method)
+                tokens = count_tokens(text, method)
                 end_time = time.time()
                 
                 print(f"{method:>10}: {tokens:>6} tokens ({end_time - start_time:.4f}s)")
@@ -108,12 +108,12 @@ def test_cost_estimation():
         print(f"--- {tokens:,} tokens ---")
         
         # OpenAI
-        openai_cost = estimar_custo_embeddings(tokens, "openai")
-        print(f"OpenAI: ${openai_cost['custo_usd']:.4f} USD / R${openai_cost['custo_brl']:.2f} BRL")
+        openai_cost = estimate_embedding_cost(tokens, "openai")
+        print(f"OpenAI: ${openai_cost['cost_usd']:.4f} USD / R${openai_cost['cost_brl']:.2f} BRL")
         
         # Local
-        local_cost = estimar_custo_embeddings(tokens, "sentence-transformers")
-        print(f"Local:  {local_cost['nota']}")
+        local_cost = estimate_embedding_cost(tokens, "sentence-transformers")
+        print(f"Local:  {local_cost['note']}")
         
         print()
 

@@ -8,7 +8,8 @@ It's the "Retrieval" piece for a RAG (Retrieval-Augmented Generation) system, de
 
 -   **Flexible Embeddings:** Support for free local embeddings (Sentence Transformers) or OpenAI (paid)
 -   **Zero Configuration:** Works without API keys - local embeddings by default
--   **🔐 Private Repositories:** Full support for private repositories via GitHub PAT or SSH
+-   **🔐 Private Repositories:** Full support for GitHub, Bitbucket, and GitLab (PAT or SSH)
+-   **Multi-Provider Support:** GitHub, Bitbucket, GitLab - auto-detected from URL
 -   **Configurable via Environment Variables:** Point to any public or private Git repository without changing code
 -   **Persistent Cache:** Vector database is created on first run and reused
 -   **Simple API:** REST endpoints for search and monitoring
@@ -46,7 +47,7 @@ docker run -p 8000:8000 \
   flaviomagacho/mcp-git-server:latest
 ```
 
-**🔐 Private Repository (with GitHub PAT):**
+**🔐 Private GitHub Repository:**
 ```bash
 docker run -p 8000:8000 \
   -e REPO_URL="https://github.com/your-username/private-repo.git" \
@@ -57,7 +58,21 @@ docker run -p 8000:8000 \
   flaviomagacho/mcp-git-server:latest
 ```
 
-> 📖 For more details about private repositories, see [PRIVATE_REPOS.md](PRIVATE_REPOS.md)
+**🔐 Private Bitbucket Repository:**
+```bash
+docker run -p 8000:8000 \
+  -e REPO_URL="https://bitbucket.org/workspace/private-repo.git" \
+  -e REPO_BRANCH="main" \
+  -e BITBUCKET_USERNAME="your_username" \
+  -e BITBUCKET_APP_PASSWORD="your_app_password" \
+  -v ./mcp_data/chroma_db:/app/chroma_db \
+  --name mcp-server \
+  flaviomagacho/mcp-git-server:latest
+```
+
+> 📖 **Documentation:**
+> - GitHub: [PRIVATE_REPOS.md](PRIVATE_REPOS.md)
+> - Bitbucket: [BITBUCKET.md](BITBUCKET.md)
 
 #### Build and Local Testing
 
