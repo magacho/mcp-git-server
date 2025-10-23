@@ -3,6 +3,42 @@
 
 **Release Date:** 2025-10-16
 
+# Release Notes - v0.8.0
+
+**Release Date:** 2025-10-23
+
+**Full Changelog:** [`v0.7.0...v0.8.0`](https://github.com/magacho/mcp-git-server/compare/v0.7.0...v0.8.0)
+
+## ✨ New Features
+
+- feat: add full Bitbucket support with multi-provider authentication (50c2b6f)
+- docs: update roadmap with prioritized features and coverage goals (d992f7b)
+
+## 📚 Documentation
+
+- docs: update CHANGELOG for v0.7.0 (17a972d)
+
+## 🚀 Installation
+
+### Docker (Recommended)
+
+```bash
+# Modo gratuito (embeddings locais)
+ docker run -p 8000:8000 \
+   -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
+   -v ./data:/app/chroma_db \
+   flaviomagacho/mcp-git-server:v0.8.0
+```
+
+## 📊 Summary
+
+- **Total commits:** 3
+- **Contributors:** @magacho
+
+
+---
+
+
 # Release Notes - v0.7.0
 
 **Release Date:** 2025-10-23
