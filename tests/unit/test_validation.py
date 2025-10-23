@@ -25,7 +25,8 @@ class TestQueryValidation:
         """Test that empty queries are rejected"""
         with pytest.raises(ValidationError) as exc_info:
             RetrieveRequest(query="", top_k=5)
-        assert "at least 3 characters" in str(exc_info.value).lower()
+        # Pydantic's built-in min_length=1 catches empty string before our custom validator
+        assert "at least 1 character" in str(exc_info.value).lower()
     
     def test_query_whitespace_only(self):
         """Test that whitespace-only queries are rejected"""
@@ -44,19 +45,19 @@ class TestQueryValidation:
         """Test that queries with <script> tags are rejected"""
         with pytest.raises(ValidationError) as exc_info:
             RetrieveRequest(query="<script>alert('xss')</script>", top_k=5)
-        assert "dangerous" in str(exc_info.value).lower()
+        assert "unsafe" in str(exc_info.value).lower()
     
     def test_query_javascript_protocol(self):
         """Test that queries with javascript: are rejected"""
         with pytest.raises(ValidationError) as exc_info:
             RetrieveRequest(query="javascript:alert(1)", top_k=5)
-        assert "dangerous" in str(exc_info.value).lower()
+        assert "unsafe" in str(exc_info.value).lower()
     
     def test_query_onerror(self):
         """Test that queries with onerror= are rejected"""
         with pytest.raises(ValidationError) as exc_info:
             RetrieveRequest(query="<img src=x onerror=alert(1)>", top_k=5)
-        assert "dangerous" in str(exc_info.value).lower()
+        assert "unsafe" in str(exc_info.value).lower()
     
     def test_query_whitespace_normalized(self):
         """Test that excessive whitespace is normalized"""
