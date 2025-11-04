@@ -5,7 +5,6 @@ Review and adjust as needed
 """
 
 from report_utils import generate_extension_report
-from report_utils import generate_token_report
 from unittest.mock import Mock, patch, MagicMock, mock_open
 import pytest
 
@@ -31,19 +30,5 @@ def test_generate_extension_report_edge_cases():
     # Test with empty values
     # Test boundary conditions
     pass  # TODO: Implement specific edge cases
-
-
-
-def test_generate_token_report_success():
-    """Test generate_token_report with valid inputs"""
-    # Arrange
-    total_tokens_gerados = "test_token_123"
-
-    # Act
-    result = generate_token_report(total_tokens_gerados)
-
-    # Assert
-    # Function executes without errors
-assert True
 
 

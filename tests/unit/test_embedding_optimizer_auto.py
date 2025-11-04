@@ -6,7 +6,6 @@ Review and adjust as needed
 
 from embedding_optimizer import estimate_processing_time
 from embedding_optimizer import get_optimal_config
-from embedding_optimizer import get_processing_strategy
 from unittest.mock import Mock, patch, MagicMock, mock_open
 import pytest
 
@@ -50,27 +49,6 @@ def test_get_optimal_config_success():
 
 def test_get_optimal_config_edge_cases():
     """Test get_optimal_config with edge case inputs"""
-    # Test with None
-    # Test with empty values
-    # Test boundary conditions
-    pass  # TODO: Implement specific edge cases
-
-
-
-def test_get_processing_strategy_success():
-    """Test get_processing_strategy with valid inputs"""
-    # Arrange
-    provider = "test_value"
-
-    # Act
-    result = get_processing_strategy(provider)
-
-    # Assert
-    assert result is not None
-
-
-def test_get_processing_strategy_edge_cases():
-    """Test get_processing_strategy with edge case inputs"""
     # Test with None
     # Test with empty values
     # Test boundary conditions
