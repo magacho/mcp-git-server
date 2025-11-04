@@ -3,6 +3,47 @@
 
 **Release Date:** 2025-11-04
 
+# Release Notes - v0.9.0
+
+**Release Date:** 2025-11-04
+
+**Full Changelog:** [`v0.8.0...v0.9.0`](https://github.com/magacho/mcp-git-server/compare/v0.8.0...v0.9.0)
+
+## ✨ New Features
+
+- feat: add Terraform file support (.tf, .tfvars, .hcl) (5e81341)
+
+## 📚 Documentation
+
+- docs: prepare release v0.9.0 - Infrastructure as Code support (c6d180b)
+- docs: update CHANGELOG and ROADMAP for v0.8.0 release (ac7e907)
+- docs: update CHANGELOG for v0.8.0 (6cdc75e)
+
+## 🔧 Other Changes
+
+- test: add comprehensive tests for Terraform file support (0d7508f)
+
+## 🚀 Installation
+
+### Docker (Recommended)
+
+```bash
+# Modo gratuito (embeddings locais)
+ docker run -p 8000:8000 \
+   -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
+   -v ./data:/app/chroma_db \
+   flaviomagacho/mcp-git-server:v0.9.0
+```
+
+## 📊 Summary
+
+- **Total commits:** 5
+- **Contributors:** @magacho
+
+
+---
+
+
 ## ✨ New Features
 
 ### Infrastructure as Code Support
