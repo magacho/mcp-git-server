@@ -6,32 +6,7 @@ Este documento contém o planejamento de funcionalidades futuras para o projeto.
 
 ## 🔥 Alta Prioridade
 
-### 1. Suporte a Arquivos Terraform (.tf)
-**Status:** 📋 Planejado  
-**Complexidade:** Baixa  
-**Descrição:**  
-Adicionar reconhecimento e indexação nativa de arquivos Terraform (.tf) e HCL.
-
-**Implementação:**
-- Reconhecer arquivos .tf, .tfvars, .hcl
-- Indexar junto com código Python, JS, etc
-- Manter contexto de recursos e módulos
-
-**Casos de uso:**
-- Entender estrutura de recursos cloud (VPCs, Security Groups, S3, etc)
-- Localizar configurações específicas de infraestrutura
-- Mapear dependências entre recursos Terraform
-- Identificar módulos e suas variáveis/outputs
-- Documentar arquitetura cloud existente
-
-**Benefícios:**
-- Buscar configurações de infraestrutura como código
-- Entender arquitetura cloud via busca semântica
-- Facilitar DevOps e SRE workflows
-
----
-
-### 2. Detecção e Atualização Automática de Código
+### 1. Detecção e Atualização Automática de Código
 **Status:** 📋 Planejado  
 **Complexidade:** Alta  
 **Descrição:**  
@@ -75,7 +50,7 @@ POST /refresh
 
 ---
 
-### 3. GitHub App Authentication
+### 2. GitHub App Authentication
 **Status:** 📋 Planejado  
 **Complexidade:** Média  
 **Descrição:**  
@@ -95,7 +70,7 @@ Adicionar suporte a GitHub App authentication para organizações empresariais.
 
 ## 🚀 Média Prioridade
 
-### 4. Autenticação e Autorização da API
+### 3. Autenticação e Autorização da API
 **Status:** 📋 Planejado  
 **Complexidade:** Média  
 **Descrição:**  
@@ -117,7 +92,7 @@ curl -X POST "http://localhost:8000/retrieve" \
 
 ---
 
-### 5. Suporte a Múltiplos Repositórios
+### 4. Suporte a Múltiplos Repositórios
 **Status:** 💡 Ideia  
 **Complexidade:** Alta  
 **Descrição:**  
@@ -153,7 +128,7 @@ DELETE /repositories/{name}
 
 ---
 
-### 6. Cache de Queries Frequentes
+### 5. Cache de Queries Frequentes
 **Status:** 💡 Ideia  
 **Complexidade:** Baixa  
 **Descrição:**  
@@ -174,7 +149,7 @@ Implementar cache Redis/in-memory para queries repetidas.
 
 ## 🔮 Baixa Prioridade / Futuro
 
-### 7. Interface Web (UI)
+### 6. Interface Web (UI)
 **Status:** 💡 Ideia  
 **Complexidade:** Média  
 **Descrição:**  
@@ -189,7 +164,7 @@ Dashboard web para gerenciar repositórios e fazer buscas.
 
 ---
 
-### 8. Suporte a Outros Provedores de Embedding
+### 7. Suporte a Outros Provedores de Embedding
 **Status:** 💡 Ideia  
 **Complexidade:** Média  
 **Descrição:**  
@@ -208,7 +183,7 @@ Permitir usar embeddings alternativos além da OpenAI.
 
 ---
 
-### 9. Filtros Avançados de Busca
+### 8. Filtros Avançados de Busca
 **Status:** 💡 Ideia  
 **Complexidade:** Baixa  
 **Descrição:**  
@@ -230,7 +205,7 @@ Adicionar filtros para refinar resultados.
 
 ---
 
-### 10. Análise de Código e Métricas
+### 9. Análise de Código e Métricas
 **Status:** 💡 Ideia  
 **Complexidade:** Alta  
 **Descrição:**  
@@ -245,7 +220,7 @@ Gerar insights sobre o repositório indexado.
 
 ---
 
-### 11. Exportação e Backup
+### 10. Exportação e Backup
 **Status:** 💡 Ideia  
 **Complexidade:** Baixa  
 **Descrição:**  
@@ -269,7 +244,7 @@ POST /import
 
 ## 🛠️ Melhorias Técnicas
 
-### 12. Observabilidade e Monitoramento
+### 11. Observabilidade e Monitoramento
 **Status:** 📋 Planejado  
 **Complexidade:** Média  
 
@@ -282,7 +257,7 @@ POST /import
 
 ---
 
-### 13. Testes Automatizados
+### 12. Testes Automatizados
 **Status:** 📋 Planejado  
 **Complexidade:** Média  
 
@@ -319,6 +294,13 @@ POST /import
 ---
 
 ## ✅ Concluído
+
+### v0.9.0 - Infrastructure as Code Support 🏗️
+- ✅ **Terraform file support** - Full indexing for `.tf`, `.tfvars`, `.hcl` files
+- ✅ **Comprehensive test suite** - 9 new tests (100% passing)
+- ✅ **Test coverage** - Increased from 0% to 19% for document_loader.py
+- ✅ **Documentation** - Updated README, ROADMAP, and CHANGELOG
+- ✅ **DevOps workflows** - Enables IaC documentation and search
 
 ### v0.2.0 - Suporte a Repositórios Privados 🔐
 - ✅ **GitHub PAT authentication** - Via variável `GITHUB_TOKEN`

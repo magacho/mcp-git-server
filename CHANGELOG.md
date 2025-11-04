@@ -54,7 +54,11 @@ docker run -p 8000:8000 \
 
 ## 🔗 Links
 
+<<<<<<< HEAD
 - **Full Changelog:** [`v0.8.0...v0.9.0`](https://github.com/magacho/mcp-git-server/compare/v0.8.0...v0.9.0)
+=======
+- **Full Changelog:** [`v0.6.0...v0.9.0`](https://github.com/magacho/mcp-git-server/compare/v0.6.0...v0.9.0)
+>>>>>>> cc86056 (docs: prepare release v0.9.0 - Infrastructure as Code support)
 - **Docker Image:** `flaviomagacho/mcp-git-server:v0.9.0`
 
 ---
