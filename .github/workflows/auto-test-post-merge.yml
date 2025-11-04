@@ -1,0 +1,168 @@
+name: Auto-Test Post-Merge Handler
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  check-coverage-and-close-issue:
+    # Only run if PR was merged (not just closed)
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.title, '🤖 Auto-generated tests')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: main
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      
+      - name: Run coverage analysis
+        id: coverage
+        run: |
+          echo "🔍 Running coverage analysis after merge..."
+          
+          # Run tests with coverage
+          pytest --cov=. --cov-report=term-missing --cov-report=json > coverage_output.txt 2>&1 || true
+          
+          # Extract coverage percentage
+          if [ -f coverage.json ]; then
+            COVERAGE=$(python3 -c "import json; data=json.load(open('coverage.json')); print(int(data['totals']['percent_covered']))")
+            echo "coverage_percent=$COVERAGE" >> $GITHUB_OUTPUT
+            echo "✅ Current coverage: $COVERAGE%"
+          else
+            echo "⚠️ Could not determine coverage"
+            echo "coverage_percent=0" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Extract issue number from PR
+        id: issue
+        run: |
+          # Extract issue number from PR body (looks for "Fixes #123" or "Issue: #123")
+          ISSUE_NUM=$(echo "${{ github.event.pull_request.body }}" | grep -oP '(?:Fixes|Issue:)\s*#\K\d+' | head -1)
+          
+          if [ -n "$ISSUE_NUM" ]; then
+            echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+            echo "✅ Found linked issue: #$ISSUE_NUM"
+          else
+            echo "⚠️ No linked issue found"
+            echo "issue_number=" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Check if target met and update issue
+        if: steps.issue.outputs.issue_number != ''
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GH_PAT || github.token }}
+          script: |
+            const issueNumber = parseInt('${{ steps.issue.outputs.issue_number }}');
+            const currentCoverage = parseInt('${{ steps.coverage.outputs.coverage_percent }}');
+            const targetCoverage = 70; // Meta definida
+            const prNumber = context.payload.pull_request.number;
+            
+            console.log(`📊 Coverage: ${currentCoverage}% | Target: ${targetCoverage}%`);
+            
+            if (currentCoverage >= targetCoverage) {
+              // 🎉 META ATINGIDA!
+              
+              const successComment = `## 🎉 Meta de Coverage Atingida!
+            
+            ### ✅ Sucesso!
+            
+            O PR #${prNumber} foi merged e a meta de coverage foi alcançada!
+            
+            ### 📊 Resultados:
+            - **Coverage Anterior:** ~26-31%
+            - **Coverage Atual:** **${currentCoverage}%** ✨
+            - **Meta:** ${targetCoverage}%
+            - **Status:** ✅ **META ATINGIDA!**
+            
+            ### 🎯 Próximos Passos:
+            Esta issue será fechada automaticamente pois a meta foi atingida.
+            
+            Para melhorias futuras:
+            - Manter coverage acima de ${targetCoverage}%
+            - Adicionar testes em novos códigos
+            - Review coverage em cada PR
+            
+            ### 🙏 Obrigado!
+            Sistema de auto-test funcionou perfeitamente!
+            
+            ---
+            *Fechado automaticamente pelo Auto-Test Agent 🤖*`;
+            
+              // Comment and close issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: successComment
+              });
+              
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                state: 'closed',
+                labels: ['test-coverage', 'completed']
+              });
+              
+              console.log(`✅ Issue #${issueNumber} closed - Target reached!`);
+              
+            } else {
+              // 📈 PROGRESSO MAS NÃO ATINGIU META
+              
+              const progressComment = `## 📈 Progresso de Coverage
+            
+            ### ✅ PR Merged!
+            
+            O PR #${prNumber} foi merged com sucesso!
+            
+            ### 📊 Status Atual:
+            - **Coverage Atual:** **${currentCoverage}%**
+            - **Meta:** ${targetCoverage}%
+            - **Faltam:** ${targetCoverage - currentCoverage}%
+            - **Progresso:** ${Math.round((currentCoverage / targetCoverage) * 100)}% da meta
+            
+            ### 🎯 Próximos Passos:
+            A meta ainda não foi atingida. O sistema continuará gerando testes automaticamente.
+            
+            **Você pode:**
+            1. Aguardar nova iteração automática
+            2. Adicionar a label \`test-coverage\` novamente para nova geração
+            3. Revisar áreas com baixa cobertura manualmente
+            
+            ### 📝 Arquivos com baixa cobertura:
+            Para ver áreas descobertas:
+            \`\`\`bash
+            pytest --cov=. --cov-report=term-missing
+            \`\`\`
+            
+            ---
+            *Issue mantida aberta até atingir ${targetCoverage}% - Auto-Test Agent 🤖*`;
+            
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: progressComment
+              });
+              
+              console.log(`📊 Issue #${issueNumber} updated - Progress: ${currentCoverage}% / ${targetCoverage}%`);
+            }
