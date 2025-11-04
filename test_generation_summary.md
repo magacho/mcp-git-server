@@ -1,16 +1,17 @@
 # 🤖 Auto-Generated Tests Summary
 
-**Total Tests Generated:** 15
-**Files Covered:** 6
+**Total Tests Generated:** 19
+**Files Covered:** 7
 
 ## Files:
 
 - `document_loader.py`: 2 tests
-- `embedding_optimizer.py`: 2 tests
+- `embedding_optimizer.py`: 3 tests
 - `logging_config.py`: 2 tests
 - `main.py`: 6 tests
 - `repo_utils.py`: 2 tests
-- `report_utils.py`: 1 tests
+- `report_utils.py`: 2 tests
+- `token_utils.py`: 2 tests
 
 ## Next Steps:
 
