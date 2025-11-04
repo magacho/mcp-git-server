@@ -13,7 +13,7 @@ from models import RetrieveRequest, DocumentFragment, RetrieveResponse
 from repo_utils import get_repo_name_from_url, clone_repo
 from document_loader import load_documents_robustly, EXTENSOES_SUPORTADAS
 from token_utils import count_tokens, estimate_embedding_cost
-from report_utils import generate_extensions_report, generate_tokens_report
+from report_utils import generate_extension_report, generate_token_report
 from embedding_config import EmbeddingProvider
 from embedding_optimizer import get_optimal_config, get_processing_strategy, estimate_processing_time
 
@@ -194,15 +194,15 @@ def index_repository():
         print("INDEXATION COMPLETED SUCCESSFULLY!", flush=True)
         print("="*60 + "\n", flush=True)
 
-        generate_extensions_report(processed_extensions, discarded_extensions)
-        generate_tokens_report(total_tokens_generated)
+        generate_extension_report(processed_extensions, discarded_extensions)
+        generate_token_report(total_tokens_generated)
     else:
         print("\n" + "="*60, flush=True)
         print(f"Carregando base de dados vetorial existente para '{REPO_NAME}'...", flush=True)
         vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embeddings)
         print(">>> SUCCESS: Database loaded from memory.", flush=True)
         print("="*60 + "\n", flush=True)
-        generate_extensions_report(processed_extensions, discarded_extensions)
+        generate_extension_report(processed_extensions, discarded_extensions)
 
     retriever = vectorstore.as_retriever()
     print(f"Server ready. Repository '{REPO_NAME}' is loaded and ready for queries.", flush=True)
