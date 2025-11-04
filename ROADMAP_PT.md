@@ -6,28 +6,28 @@ Este documento contém o planejamento de funcionalidades futuras para o projeto.
 
 ## 🔥 Alta Prioridade
 
-### 1. Suporte a Repositórios Privados do GitHub
+### 1. Suporte a Arquivos Terraform (.tf)
 **Status:** 📋 Planejado  
-**Complexidade:** Média  
+**Complexidade:** Baixa  
 **Descrição:**  
-Adicionar autenticação para clonar e indexar repositórios privados do GitHub.
+Adicionar reconhecimento e indexação nativa de arquivos Terraform (.tf) e HCL.
 
-**Implementação sugerida:**
-- Suporte a Personal Access Token (PAT) via variável de ambiente `GITHUB_TOKEN`
-- Suporte a SSH keys montadas no container
-- Suporte a GitHub App authentication para organizações
-- Validação de permissões antes de clonar
+**Implementação:**
+- Reconhecer arquivos .tf, .tfvars, .hcl
+- Indexar junto com código Python, JS, etc
+- Manter contexto de recursos e módulos
 
-**Variáveis de ambiente:**
-```bash
-GITHUB_TOKEN=ghp_xxxxxxxxxxxxx
-REPO_URL=https://github.com/empresa/repo-privado.git
-```
+**Casos de uso:**
+- Entender estrutura de recursos cloud (VPCs, Security Groups, S3, etc)
+- Localizar configurações específicas de infraestrutura
+- Mapear dependências entre recursos Terraform
+- Identificar módulos e suas variáveis/outputs
+- Documentar arquitetura cloud existente
 
 **Benefícios:**
-- Permite uso em projetos corporativos
-- Maior segurança no acesso aos repositórios
-- Integração com CI/CD privado
+- Buscar configurações de infraestrutura como código
+- Entender arquitetura cloud via busca semântica
+- Facilitar DevOps e SRE workflows
 
 ---
 
@@ -75,9 +75,27 @@ POST /refresh
 
 ---
 
+### 3. GitHub App Authentication
+**Status:** 📋 Planejado  
+**Complexidade:** Média  
+**Descrição:**  
+Adicionar suporte a GitHub App authentication para organizações empresariais.
+
+**Implementação sugerida:**
+- GitHub App authentication para organizações
+- Validação de permissões antes de clonar
+- Refresh automático de tokens
+
+**Benefícios:**
+- Melhor controle de permissões em organizações
+- Tokens com escopo mais granular
+- Auditoria centralizada
+
+---
+
 ## 🚀 Média Prioridade
 
-### 3. Autenticação e Autorização da API
+### 4. Autenticação e Autorização da API
 **Status:** 📋 Planejado  
 **Complexidade:** Média  
 **Descrição:**  
@@ -99,7 +117,7 @@ curl -X POST "http://localhost:8000/retrieve" \
 
 ---
 
-### 4. Suporte a Múltiplos Repositórios
+### 5. Suporte a Múltiplos Repositórios
 **Status:** 💡 Ideia  
 **Complexidade:** Alta  
 **Descrição:**  
@@ -135,7 +153,7 @@ DELETE /repositories/{name}
 
 ---
 
-### 5. Cache de Queries Frequentes
+### 6. Cache de Queries Frequentes
 **Status:** 💡 Ideia  
 **Complexidade:** Baixa  
 **Descrição:**  
@@ -156,7 +174,7 @@ Implementar cache Redis/in-memory para queries repetidas.
 
 ## 🔮 Baixa Prioridade / Futuro
 
-### 6. Interface Web (UI)
+### 7. Interface Web (UI)
 **Status:** 💡 Ideia  
 **Complexidade:** Média  
 **Descrição:**  
@@ -171,7 +189,7 @@ Dashboard web para gerenciar repositórios e fazer buscas.
 
 ---
 
-### 7. Suporte a Outros Provedores de Embedding
+### 8. Suporte a Outros Provedores de Embedding
 **Status:** 💡 Ideia  
 **Complexidade:** Média  
 **Descrição:**  
@@ -190,7 +208,7 @@ Permitir usar embeddings alternativos além da OpenAI.
 
 ---
 
-### 8. Filtros Avançados de Busca
+### 9. Filtros Avançados de Busca
 **Status:** 💡 Ideia  
 **Complexidade:** Baixa  
 **Descrição:**  
@@ -212,7 +230,7 @@ Adicionar filtros para refinar resultados.
 
 ---
 
-### 9. Análise de Código e Métricas
+### 10. Análise de Código e Métricas
 **Status:** 💡 Ideia  
 **Complexidade:** Alta  
 **Descrição:**  
@@ -227,7 +245,7 @@ Gerar insights sobre o repositório indexado.
 
 ---
 
-### 10. Exportação e Backup
+### 11. Exportação e Backup
 **Status:** 💡 Ideia  
 **Complexidade:** Baixa  
 **Descrição:**  
@@ -251,7 +269,7 @@ POST /import
 
 ## 🛠️ Melhorias Técnicas
 
-### 11. Observabilidade e Monitoramento
+### 12. Observabilidade e Monitoramento
 **Status:** 📋 Planejado  
 **Complexidade:** Média  
 
@@ -264,7 +282,7 @@ POST /import
 
 ---
 
-### 12. Testes Automatizados
+### 13. Testes Automatizados
 **Status:** 📋 Planejado  
 **Complexidade:** Média  
 
@@ -301,6 +319,13 @@ POST /import
 ---
 
 ## ✅ Concluído
+
+### v0.2.0 - Suporte a Repositórios Privados 🔐
+- ✅ **GitHub PAT authentication** - Via variável `GITHUB_TOKEN`
+- ✅ **Suporte SSH** - Para repositórios privados com chave SSH
+- ✅ **Autenticação HTTPS** - Token injetado automaticamente na URL
+- ✅ **Clone seguro** - Credenciais escondidas nos logs
+- ✅ **Autenticação da API** - Sistema básico com X-API-Key (opcional)
 
 ### v0.1.0 - Release Estável com Embeddings Locais 🎉
 - ✅ **Embeddings locais por padrão** - Funciona sem chaves de API

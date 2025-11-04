@@ -222,6 +222,7 @@ See [PRIVATE_REPOS.md](PRIVATE_REPOS.md) for complete documentation.
 - **Web:** `.html`, `.css`, `.vue`, `.svelte`
 - **Config:** `.json`, `.yml`, `.yaml`, `.xml`, `.env`
 - **Scripts:** `.sh`, `.bash`, `.sql`
+- **Infrastructure:** `.tf`, `.tfvars`, `.hcl` (Terraform/HCL)
 - **Docs:** `.md`, `.txt`, `.pdf`
 - **Special:** `README`, `LICENSE`, `DOCKERFILE`, `MAKEFILE`, etc.
 

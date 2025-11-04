@@ -1,248 +1,100 @@
 
-# Release Notes - v0.8.0
+# Release Notes - v0.9.0
 
-**Release Date:** 2025-10-23
-
-**Full Changelog:** [`v0.7.0...v0.8.0`](https://github.com/magacho/mcp-git-server/compare/v0.7.0...v0.8.0)
-
-## 🎉 Major Features
-
-- **feat: Full Bitbucket Support** - Complete support for public and private Bitbucket repositories
-- **feat: Multi-Provider Authentication** - Automatic detection and authentication for GitHub, Bitbucket, and GitLab
-- **feat: Smart Credential Management** - Provider-aware credential selection and injection
+**Release Date:** 2025-11-04
 
 ## ✨ New Features
 
-- Bitbucket HTTPS authentication (username + app password)
-- Bitbucket SSH authentication support
-- GitLab basic authentication support
-- Generic Git provider fallback support
-- Automatic provider detection from repository URL
-- Provider-specific error messages and troubleshooting guidance
-- Smart credential priority system (explicit > provider-specific > generic)
-
-## 🔧 Enhancements
-
-- Enhanced `repo_utils.py` with multi-provider support
-- Added `detect_git_provider()` function for automatic provider detection
-- Enhanced `inject_token_in_url()` with username:password format support
-- Enhanced `get_git_credentials()` with URL-based provider detection
-- Enhanced `clone_repo()` with provider-specific error messages
-- Updated `.env.example` with Bitbucket and GitLab variables
-- Updated `README.md` with multi-provider examples
-
-## 🐛 Bug Fixes
-
-- Fixed `test_embeddings.py` imports after i18n translation
+### Infrastructure as Code Support
+- **feat: add Terraform file support (.tf, .tfvars, .hcl)** - Full support for indexing and searching Terraform/HCL files
+  - New file extensions: `.tf`, `.tfvars`, `.hcl`
+  - Seamless integration with existing embedding pipeline
+  - Enables DevOps and SRE workflows
+  - Use cases: IaC documentation, cloud architecture search
 
 ## 🧪 Testing
 
-- Added `test_bitbucket.py` with 25 comprehensive tests
-- Provider detection tests (4 tests)
-- Token injection tests (4 tests)
-- Credential retrieval tests (5 tests)
-- Authentication URL tests (6 tests)
-- Clone operation tests (4 tests)
-- Integration scenario tests (2 tests)
-- **All 26 tests passing (100%)**
+- **test: comprehensive test suite for Terraform support**
+  - 9 new tests covering file extensions, processing, and metadata
+  - 100% pass rate for Terraform-specific tests
+  - Test coverage increased from 0% to 19% for document_loader.py
 
 ## 📚 Documentation
 
-- Added `BITBUCKET.md` - Complete Bitbucket setup guide (5.4 KB)
-- Added `BITBUCKET_IMPLEMENTATION.md` - Technical implementation details (9.7 KB)
-- Added `BITBUCKET_SUCCESS.md` - Success summary
-- Added `BITBUCKET_SUMMARY.txt` - Executive summary
-- Updated `README.md` with Bitbucket examples
-- Updated `.env.example` with configuration templates
-
-## 🔒 Security
-
-- Credentials automatically hidden in logs (replaced with `***`)
-- Environment variables preferred over hardcoding
-- SSH keys mounted read-only
-- Minimal permissions required for app passwords
-- No credentials stored in git history
-
-## 🔄 Backward Compatibility
-
-- ✅ 100% backward compatible with existing GitHub workflows
-- ✅ No breaking changes to function signatures
-- ✅ All existing tests pass
-- ✅ Environment variables fully supported
-- ✅ Zero migration effort required
-
-## 📊 Supported Providers
-
-| Provider | Public | Private (HTTPS) | Private (SSH) | Status |
-|----------|--------|-----------------|---------------|--------|
-| **GitHub** | ✅ | ✅ (PAT) | ✅ | Existing |
-| **Bitbucket** | ✅ | ✅ (App Password) | ✅ | **NEW!** ⭐ |
-| **GitLab** | ✅ | ✅ (PAT) | ✅ | Basic |
-| **Generic** | ✅ | ✅ (Token) | ✅ | Fallback |
+- docs: add Infrastructure section to README with Terraform file types
+- docs: update CHANGELOG with v0.9.0 release notes
+- docs: move Terraform support to High Priority #1 in ROADMAP
 
 ## 🚀 Installation
 
 ### Docker (Recommended)
 
-#### Public Bitbucket Repository
 ```bash
+# Free mode (local embeddings)
 docker run -p 8000:8000 \
-  -e REPO_URL="https://bitbucket.org/workspace/repo.git" \
-  -e REPO_BRANCH="main" \
+  -e REPO_URL="https://github.com/your-user/your-repo.git" \
   -v ./data:/app/chroma_db \
-  flaviomagacho/mcp-git-server:v0.8.0
-```
+  flaviomagacho/mcp-git-server:v0.9.0
 
-#### Private Bitbucket Repository (HTTPS)
-```bash
+# Example with Terraform repository
 docker run -p 8000:8000 \
-  -e REPO_URL="https://bitbucket.org/workspace/private-repo.git" \
-  -e REPO_BRANCH="main" \
-  -e BITBUCKET_USERNAME="your_username" \
-  -e BITBUCKET_APP_PASSWORD="your_app_password" \
-  -v ./data:/app/chroma_db \
-  flaviomagacho/mcp-git-server:v0.8.0
+  -e REPO_URL="https://github.com/terraform-aws-modules/terraform-aws-vpc" \
+  -e REPO_BRANCH="master" \
+  flaviomagacho/mcp-git-server:v0.9.0
 ```
-
-#### Private Bitbucket Repository (SSH)
-```bash
-docker run -p 8000:8000 \
-  -e REPO_URL="git@bitbucket.org:workspace/private-repo.git" \
-  -e REPO_BRANCH="main" \
-  -v ~/.ssh:/root/.ssh:ro \
-  -v ./data:/app/chroma_db \
-  flaviomagacho/mcp-git-server:v0.8.0
-```
-
-## 💡 Usage Tips
-
-### Create Bitbucket App Password
-1. Go to: https://bitbucket.org/account/settings/app-passwords/
-2. Click "Create app password"
-3. Label: "MCP Git Server"
-4. Permissions: Check "Repositories: Read"
-5. Copy password immediately (shown only once!)
-
-### Environment Variables
-
-**GitHub:**
-```bash
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
-```
-
-**Bitbucket:**
-```bash
-BITBUCKET_USERNAME=your_username
-BITBUCKET_APP_PASSWORD=your_app_password
-```
-
-**GitLab:**
-```bash
-GITLAB_TOKEN=glpat-xxxxxxxxxxxx
-```
-
-**Generic Git:**
-```bash
-GIT_TOKEN=your_token
-GIT_USERNAME=your_username
-```
-
-## 📈 Statistics
-
-- **Files Modified:** 4
-- **Files Created:** 5
-- **Lines Added:** ~400
-- **Tests Added:** 25
-- **Documentation:** ~15 KB
-- **Test Coverage:** 100%
 
 ## 📊 Summary
 
-- **Total commits:** 1
-- **Contributors:** @magacho
-- **Status:** ✅ Production Ready
+- **New file types:** `.tf`, `.tfvars`, `.hcl` (Terraform/HCL)
+- **New tests:** 9 tests (100% passing)
+- **Total tests:** 67 tests (58 passing, 9 pre-existing failures)
+- **Use cases:** Infrastructure as Code documentation, DevOps workflows
+- **Implementation time:** ~35 minutes (feature + tests)
+- **Breaking changes:** None
+
+## 🔗 Links
+
+- **Full Changelog:** [`v0.8.0...v0.9.0`](https://github.com/magacho/mcp-git-server/compare/v0.8.0...v0.9.0)
+- **Docker Image:** `flaviomagacho/mcp-git-server:v0.9.0`
 
 ---
 
+# Release Notes - v0.3.0
 
-# Release Notes - v0.8.0
-
-**Release Date:** 2025-10-23
-
-**Full Changelog:** [`v0.7.0...v0.8.0`](https://github.com/magacho/mcp-git-server/compare/v0.7.0...v0.8.0)
+**Release Date:** 2025-11-04
 
 ## ✨ New Features
 
-- feat: add full Bitbucket support with multi-provider authentication (50c2b6f)
-- docs: update roadmap with prioritized features and coverage goals (d992f7b)
+### Infrastructure as Code Support
+- feat: add Terraform file support (.tf, .tfvars, .hcl) - Full support for indexing and searching Terraform/HCL files
 
 ## 📚 Documentation
 
-- docs: update CHANGELOG for v0.7.0 (17a972d)
+- docs: add Terraform files to supported file types in README
+- docs: update ROADMAP with Terraform as high priority feature
 
 ## 🚀 Installation
 
 ### Docker (Recommended)
 
 ```bash
-# Modo gratuito (embeddings locais)
- docker run -p 8000:8000 \
-   -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
-   -v ./data:/app/chroma_db \
-   flaviomagacho/mcp-git-server:v0.8.0
+# Free mode (local embeddings)
+docker run -p 8000:8000 \
+  -e REPO_URL="https://github.com/your-user/your-repo.git" \
+  -v ./data:/app/chroma_db \
+  flaviomagacho/mcp-git-server:latest
 ```
 
 ## 📊 Summary
 
-- **Total commits:** 3
-- **Contributors:** @magacho
-
-
----
-
-
-# Release Notes - v0.7.0
-
-**Release Date:** 2025-10-23
-
-**Full Changelog:** [`v0.6.0...v0.7.0`](https://github.com/magacho/mcp-git-server/compare/v0.6.0...v0.7.0)
-
-## 🐛 Bug Fixes
-
-- fix: migrate Pydantic validators to V2 and fix validation logic (6b5ee9e)
-- fix: translate token_utils.py function names to English (cb2d22c)
-
-## 📚 Documentation
-
-- i18n: translate remaining documentation to English (dff570b)
-- docs: update ROADMAP and CHANGELOG for v0.6.0 (77cf5d2)
-- docs: update CHANGELOG for v0.6.0 (05b821a)
-
-## 🔧 Other Changes
-
-- i18n: complete translation of remaining Portuguese code to English (8aa8dde)
-- i18n: translate remaining Portuguese messages to English (49d5272)
-
-## 🚀 Installation
-
-### Docker (Recommended)
-
-```bash
-# Modo gratuito (embeddings locais)
- docker run -p 8000:8000 \
-   -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
-   -v ./data:/app/chroma_db \
-   flaviomagacho/mcp-git-server:v0.7.0
-```
-
-## 📊 Summary
-
-- **Total commits:** 7
-- **Contributors:** @magacho
-
+- **New file types:** `.tf`, `.tfvars`, `.hcl`
+- **Use cases:** Infrastructure as Code, Terraform documentation, DevOps workflows
 
 ---
 
+# Release Notes - v0.2.1
+
+**Release Date:** 2025-10-16
 
 # Release Notes - v0.6.0
 

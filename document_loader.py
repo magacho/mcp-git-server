@@ -5,7 +5,9 @@ from langchain_community.document_loaders import JSONLoader, PyPDFLoader
 EXTENSOES_SUPORTADAS = [
     ".md", ".ts", ".js", ".tsx", ".jsx", ".py", ".java", ".html", ".css", ".txt", ".json", ".pdf", 
     ".yml", ".yaml", ".xml", ".sql", ".sh", ".bash", ".dockerfile", ".env", ".gitignore", 
-    ".vue", ".svelte", ".go", ".rs", ".cpp", ".c", ".h", ".cs", ".php", ".rb", ".swift", ""
+    ".vue", ".svelte", ".go", ".rs", ".cpp", ".c", ".h", ".cs", ".php", ".rb", ".swift",
+    ".tf", ".tfvars", ".hcl",  # Terraform/HCL files
+    ""
 ]
 
 # Special files without extension that should be processed
