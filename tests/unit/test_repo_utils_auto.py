@@ -5,10 +5,30 @@ Review and adjust as needed
 """
 
 from repo_utils import clone_repo
-from repo_utils import detect_git_provider
 from repo_utils import get_git_credentials
 from unittest.mock import Mock, patch, MagicMock, mock_open
 import pytest
+
+
+
+def test_get_git_credentials_success():
+    """Test get_git_credentials with valid inputs"""
+    # Arrange
+    repo_url = "https://example.com"
+
+    # Act
+    result = get_git_credentials(repo_url)
+
+    # Assert
+    assert result is not None
+
+
+def test_get_git_credentials_edge_cases():
+    """Test get_git_credentials with edge case inputs"""
+    # Test with None
+    # Test with empty values
+    # Test boundary conditions
+    pass  # TODO: Implement specific edge cases
 
 
 
@@ -41,47 +61,5 @@ def test_clone_repo_error_handling():
     with pytest.raises(Exception):
         # Test invalid inputs that should raise
         clone_repo()
-
-
-
-def test_get_git_credentials_success():
-    """Test get_git_credentials with valid inputs"""
-    # Arrange
-    repo_url = "https://example.com"
-
-    # Act
-    result = get_git_credentials(repo_url)
-
-    # Assert
-    assert result is not None
-
-
-def test_get_git_credentials_edge_cases():
-    """Test get_git_credentials with edge case inputs"""
-    # Test with None
-    # Test with empty values
-    # Test boundary conditions
-    pass  # TODO: Implement specific edge cases
-
-
-
-def test_detect_git_provider_success():
-    """Test detect_git_provider with valid inputs"""
-    # Arrange
-    repo_url = "https://example.com"
-
-    # Act
-    result = detect_git_provider(repo_url)
-
-    # Assert
-    assert result is not None
-
-
-def test_detect_git_provider_edge_cases():
-    """Test detect_git_provider with edge case inputs"""
-    # Test with None
-    # Test with empty values
-    # Test boundary conditions
-    pass  # TODO: Implement specific edge cases
 
 
