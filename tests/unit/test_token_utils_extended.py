@@ -279,13 +279,14 @@ class TestIntegrationScenarios:
     
     def test_cost_estimation_workflow(self):
         """Test complete cost estimation workflow"""
+        MIN_TOKENS_FOR_COST_TEST = 1000  # Minimum tokens to generate measurable cost
         text = "Sample text for embedding " * 100  # Make it long enough to generate cost
         
         # Count tokens
         tokens = count_tokens(text, method="local")
         
-        # Estimate cost - use at least 1000 tokens for meaningful cost
-        cost_openai = estimate_embedding_cost(max(tokens, 1000), "openai")
+        # Estimate cost - use at least MIN_TOKENS_FOR_COST_TEST for meaningful cost
+        cost_openai = estimate_embedding_cost(max(tokens, MIN_TOKENS_FOR_COST_TEST), "openai")
         cost_local = estimate_embedding_cost(tokens, "sentence-transformers")
         
         assert cost_openai["cost_usd"] > 0

@@ -178,10 +178,11 @@ class TestEstimateProcessingTime:
     
     def test_openai_time_estimate_large(self):
         """Test OpenAI time estimate for large dataset"""
+        MIN_SECONDS_PER_DOCUMENT = 1.0  # Minimum processing time per document
         result = estimate_processing_time("openai", 5000, 1000)
         
         # Should take longer for more documents
-        assert result["estimated_seconds"] >= 5000 * 1.0
+        assert result["estimated_seconds"] >= 5000 * MIN_SECONDS_PER_DOCUMENT
     
     @patch('psutil.virtual_memory')
     @patch('os.cpu_count')
