@@ -8,8 +8,6 @@ from main import embedding_info
 from main import index_repository
 from main import read_root
 from main import retrieve_context
-from main import send_batch_local
-from main import send_batch_openai
 from unittest.mock import Mock, patch, MagicMock, mock_open
 import pytest
 
@@ -42,30 +40,6 @@ def test_index_repository_error_handling():
 
 
 
-def test_send_batch_openai_success():
-    """Test send_batch_openai with valid inputs"""
-    # Arrange
-    batch = None
-    batch_num = None
-    total_batches = None
-    total_chars = None
-
-    # Act
-    result = send_batch_openai(batch, batch_num, total_batches, total_chars)
-
-    # Assert
-    assert result is not None
-
-
-def test_send_batch_openai_edge_cases():
-    """Test send_batch_openai with edge case inputs"""
-    # Test with None
-    # Test with empty values
-    # Test boundary conditions
-    pass  # TODO: Implement specific edge cases
-
-
-
 def test_retrieve_context_success():
     """Test retrieve_context with valid inputs"""
     # Arrange
@@ -91,22 +65,6 @@ def test_retrieve_context_error_handling():
     with pytest.raises(Exception):
         # Test invalid inputs that should raise
         retrieve_context()
-
-
-
-def test_send_batch_local_success():
-    """Test send_batch_local with valid inputs"""
-    # Arrange
-    batch = None
-    batch_num = None
-    total_batches = None
-    total_chars = None
-
-    # Act
-    result = send_batch_local(batch, batch_num, total_batches, total_chars)
-
-    # Assert
-    assert result is not None
 
 
 
