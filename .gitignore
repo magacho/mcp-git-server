@@ -57,3 +57,4 @@ Thumbs.db
 # Temporary files with sensitive data
 keys.txt
 scrap.txt
+coverage.json
