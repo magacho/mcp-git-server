@@ -14,8 +14,8 @@ import pytest
 def test_count_tokens_success():
     """Test count_tokens with valid inputs"""
     # Arrange
-    text = "test_value"
-    method = "test_value"
+    text = "Hello world, this is a test"
+    method = "local"
     model = None
 
     # Act
@@ -23,6 +23,7 @@ def test_count_tokens_success():
 
     # Assert
     assert result is not None
+    assert result > 0
 
 
 def test_count_tokens_edge_cases():
