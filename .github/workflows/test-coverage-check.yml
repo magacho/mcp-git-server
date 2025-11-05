@@ -1,4 +1,4 @@
-name: Test Coverage Analysis & Suggestions
+name: Coverage Analysis & Suggestions
 
 on:
   pull_request:
