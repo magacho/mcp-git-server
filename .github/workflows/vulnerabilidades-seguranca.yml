@@ -89,21 +89,254 @@ jobs:
         script: |
           const fs = require('fs');
           let issuesFound = [];
+          let detailedInfo = [];
           
+          // Mapeamento de soluções para problemas comuns do Bandit
+          const banditSolutions = {
+            'B201': {
+              title: 'Uso de flask com debug=True',
+              risk: 'Expõe informações sensíveis e permite execução remota de código',
+              solution: 'Defina debug=False em produção ou use variáveis de ambiente'
+            },
+            'B105': {
+              title: 'Hardcoded password/secret',
+              risk: 'Credenciais expostas no código-fonte',
+              solution: 'Use variáveis de ambiente ou gerenciadores de secrets (ex: python-dotenv, AWS Secrets Manager)'
+            },
+            'B106': {
+              title: 'Hardcoded password em argumento de função',
+              risk: 'Senha visível no código',
+              solution: 'Carregue senhas de variáveis de ambiente ou arquivos de configuração seguros'
+            },
+            'B107': {
+              title: 'Hardcoded password em default de argumento',
+              risk: 'Valor padrão inseguro',
+              solution: 'Use None como padrão e carregue o valor de forma segura'
+            },
+            'B110': {
+              title: 'Try/Except com pass',
+              risk: 'Erros silenciados podem ocultar problemas de segurança',
+              solution: 'Trate exceções específicas e faça log apropriado'
+            },
+            'B301': {
+              title: 'Uso de pickle',
+              risk: 'Deserialização insegura pode executar código arbitrário',
+              solution: 'Use JSON ou outros formatos seguros. Se necessário, valide dados antes de unpickle'
+            },
+            'B303': {
+              title: 'Uso de MD5 ou SHA1',
+              risk: 'Algoritmos de hash quebrados',
+              solution: 'Use SHA-256, SHA-384 ou SHA-512 para hashing criptográfico'
+            },
+            'B304': {
+              title: 'Uso de cipher inseguro',
+              risk: 'Criptografia fraca',
+              solution: 'Use AES-256 com modo GCM ou outras cifras modernas'
+            },
+            'B501': {
+              title: 'Certificado SSL não verificado',
+              risk: 'Permite ataques man-in-the-middle',
+              solution: 'Defina verify=True em requests ou valide certificados manualmente'
+            },
+            'B601': {
+              title: 'Uso de shell=True',
+              risk: 'Injeção de comandos no shell',
+              solution: 'Use lista de argumentos sem shell=True, ou valide/escape entradas'
+            },
+            'B602': {
+              title: 'Uso de subprocess sem validação',
+              risk: 'Execução de comandos perigosos',
+              solution: 'Valide todas as entradas e use shlex.quote() para escapar'
+            },
+            'B605': {
+              title: 'Start process com shell',
+              risk: 'Injeção de comandos',
+              solution: 'Não use shell=True e valide argumentos'
+            },
+            'B608': {
+              title: 'SQL concatenado',
+              risk: 'Injeção SQL',
+              solution: 'Use queries parametrizadas ou ORM (SQLAlchemy, Django ORM)'
+            }
+          };
+          
+          // Processar relatório do Bandit
           try {
             const bandit = JSON.parse(fs.readFileSync('bandit-report.json', 'utf8'));
             const highMedium = bandit.results.filter(r => ['HIGH', 'MEDIUM'].includes(r.issue_severity));
+            
             if (highMedium.length > 0) {
-              issuesFound.push(`**Bandit:** ${highMedium.length} problemas de segurança encontrados`);
+              const high = highMedium.filter(r => r.issue_severity === 'HIGH').length;
+              const medium = highMedium.filter(r => r.issue_severity === 'MEDIUM').length;
+              
+              issuesFound.push(`**Bandit:** ${highMedium.length} problema(s) de segurança no código`);
+              
+              detailedInfo.push('#### 🔍 Análise Estática de Código (Bandit)\n');
+              if (high > 0) detailedInfo.push(`- 🔴 **${high}** problema(s) de severidade ALTA`);
+              if (medium > 0) detailedInfo.push(`- 🟡 **${medium}** problema(s) de severidade MÉDIA`);
+              
+              detailedInfo.push('\n---\n');
+              
+              highMedium.slice(0, 8).forEach((issue, idx) => {
+                const severity = issue.issue_severity === 'HIGH' ? '🔴 ALTA' : '🟡 MÉDIA';
+                const solution = banditSolutions[issue.test_id] || {};
+                
+                detailedInfo.push(`### ${idx + 1}. ${severity} - ${solution.title || issue.issue_text}\n`);
+                detailedInfo.push(`**📍 Localização:** \`${issue.filename}:${issue.line_number}\``);
+                detailedInfo.push(`**🔖 ID:** ${issue.test_id} | **⚠️ Confiança:** ${issue.issue_confidence}\n`);
+                
+                if (solution.risk) {
+                  detailedInfo.push(`**⚠️ Risco:**`);
+                  detailedInfo.push(`${solution.risk}\n`);
+                }
+                
+                detailedInfo.push(`**📝 Problema detectado:**`);
+                detailedInfo.push('```python');
+                detailedInfo.push(issue.code ? issue.code.trim() : 'Código não disponível');
+                detailedInfo.push('```\n');
+                
+                if (solution.solution) {
+                  detailedInfo.push(`**✅ Solução recomendada:**`);
+                  detailedInfo.push(`${solution.solution}\n`);
+                  
+                  // Adicionar exemplo de correção baseado no tipo
+                  if (issue.test_id === 'B105' || issue.test_id === 'B106' || issue.test_id === 'B107') {
+                    detailedInfo.push('**Exemplo de correção:**');
+                    detailedInfo.push('```python');
+                    detailedInfo.push('# Errado:');
+                    detailedInfo.push('password = "minhasenha123"');
+                    detailedInfo.push('');
+                    detailedInfo.push('# Correto:');
+                    detailedInfo.push('import os');
+                    detailedInfo.push('password = os.environ.get("DB_PASSWORD")');
+                    detailedInfo.push('```');
+                  } else if (issue.test_id === 'B608') {
+                    detailedInfo.push('**Exemplo de correção:**');
+                    detailedInfo.push('```python');
+                    detailedInfo.push('# Errado:');
+                    detailedInfo.push('query = f"SELECT * FROM users WHERE id = {user_id}"');
+                    detailedInfo.push('');
+                    detailedInfo.push('# Correto:');
+                    detailedInfo.push('query = "SELECT * FROM users WHERE id = %s"');
+                    detailedInfo.push('cursor.execute(query, (user_id,))');
+                    detailedInfo.push('```');
+                  } else if (issue.test_id === 'B601' || issue.test_id === 'B602') {
+                    detailedInfo.push('**Exemplo de correção:**');
+                    detailedInfo.push('```python');
+                    detailedInfo.push('# Errado:');
+                    detailedInfo.push('subprocess.call(f"ls {user_input}", shell=True)');
+                    detailedInfo.push('');
+                    detailedInfo.push('# Correto:');
+                    detailedInfo.push('subprocess.call(["ls", user_input], shell=False)');
+                    detailedInfo.push('```');
+                  } else if (issue.test_id === 'B303') {
+                    detailedInfo.push('**Exemplo de correção:**');
+                    detailedInfo.push('```python');
+                    detailedInfo.push('# Errado:');
+                    detailedInfo.push('import hashlib');
+                    detailedInfo.push('hash = hashlib.md5(data).hexdigest()');
+                    detailedInfo.push('');
+                    detailedInfo.push('# Correto:');
+                    detailedInfo.push('import hashlib');
+                    detailedInfo.push('hash = hashlib.sha256(data).hexdigest()');
+                    detailedInfo.push('```');
+                  }
+                } else {
+                  detailedInfo.push(`**💡 Recomendação:**`);
+                  detailedInfo.push(`Revise o código e consulte a [documentação do Bandit](https://bandit.readthedocs.io/en/latest/plugins/${issue.test_id.toLowerCase()}.html) para orientações específicas.\n`);
+                }
+                
+                detailedInfo.push('\n---\n');
+              });
+              
+              if (highMedium.length > 8) {
+                detailedInfo.push(`\n📋 **Há mais ${highMedium.length - 8} problema(s).** Baixe o relatório completo nos artifacts do workflow para análise detalhada.\n`);
+              }
             }
-          } catch (e) {}
+          } catch (e) {
+            console.log('Erro ao processar Bandit:', e.message);
+          }
           
+          // Processar relatório do Safety
           try {
             const safety = JSON.parse(fs.readFileSync('safety-report.json', 'utf8'));
             if (safety.vulnerabilities && safety.vulnerabilities.length > 0) {
-              issuesFound.push(`**Safety:** ${safety.vulnerabilities.length} vulnerabilidades em dependências`);
+              issuesFound.push(`**Safety:** ${safety.vulnerabilities.length} vulnerabilidade(s) em dependências`);
+              
+              detailedInfo.push('\n#### 📦 Vulnerabilidades em Dependências (Safety)\n');
+              detailedInfo.push('Dependências com vulnerabilidades conhecidas (CVEs):\n');
+              detailedInfo.push('---\n');
+              
+              safety.vulnerabilities.slice(0, 8).forEach((vuln, idx) => {
+                const severity = vuln.severity || 'UNKNOWN';
+                const severityEmoji = severity === 'HIGH' ? '🔴' : severity === 'MEDIUM' ? '🟡' : '⚪';
+                
+                detailedInfo.push(`### ${idx + 1}. ${severityEmoji} ${vuln.package_name} ${vuln.vulnerable_spec || ''}\n`);
+                
+                detailedInfo.push(`**🔖 CVE ID:** ${vuln.vulnerability_id || 'Não informado'}`);
+                if (vuln.published_date) {
+                  detailedInfo.push(`**📅 Publicado em:** ${vuln.published_date}`);
+                }
+                detailedInfo.push('');
+                
+                detailedInfo.push(`**⚠️ Descrição da Vulnerabilidade:**`);
+                detailedInfo.push(`${vuln.advisory || 'Sem descrição disponível'}\n`);
+                
+                if (vuln.cve) {
+                  detailedInfo.push(`**🔗 Referências:**`);
+                  detailedInfo.push(`- [CVE Details](https://cve.mitre.org/cgi-bin/cvename.cgi?name=${vuln.cve})`);
+                  detailedInfo.push(`- [NVD Database](https://nvd.nist.gov/vuln/detail/${vuln.cve})`);
+                  detailedInfo.push('');
+                }
+                
+                detailedInfo.push(`**✅ Como Corrigir:**`);
+                if (vuln.fixed_in && vuln.fixed_in.length > 0) {
+                  detailedInfo.push(`Atualize o pacote para uma das versões seguras:`);
+                  detailedInfo.push('```bash');
+                  detailedInfo.push(`pip install --upgrade "${vuln.package_name}>=${vuln.fixed_in[0]}"`);
+                  detailedInfo.push('```');
+                  detailedInfo.push(`**Versões seguras:** ${vuln.fixed_in.join(', ')}`);
+                } else {
+                  detailedInfo.push(`⚠️  Nenhuma versão corrigida disponível ainda.`);
+                  detailedInfo.push(`**Ações possíveis:**`);
+                  detailedInfo.push(`- Procure por alternativas ao pacote`);
+                  detailedInfo.push(`- Aguarde atualização do mantenedor`);
+                  detailedInfo.push(`- Avalie se o risco é aceitável para seu caso de uso`);
+                }
+                
+                detailedInfo.push('');
+                detailedInfo.push(`**📝 Atualize seu requirements.txt:**`);
+                detailedInfo.push('```txt');
+                if (vuln.fixed_in && vuln.fixed_in.length > 0) {
+                  detailedInfo.push(`${vuln.package_name}>=${vuln.fixed_in[0]}  # Corrigido`);
+                } else {
+                  detailedInfo.push(`# ${vuln.package_name}  # ATENÇÃO: Vulnerabilidade sem correção`);
+                }
+                detailedInfo.push('```\n');
+                
+                detailedInfo.push('---\n');
+              });
+              
+              if (safety.vulnerabilities.length > 8) {
+                detailedInfo.push(`\n📋 **Há mais ${safety.vulnerabilities.length - 8} vulnerabilidade(s).** Baixe o relatório completo nos artifacts do workflow.\n`);
+              }
             }
-          } catch (e) {}
+          } catch (e) {
+            console.log('Erro ao processar Safety:', e.message);
+          }
+          
+          // Processar relatório do pip-audit
+          try {
+            const pipAudit = JSON.parse(fs.readFileSync('pip-audit-report.json', 'utf8'));
+            if (pipAudit.dependencies && pipAudit.dependencies.length > 0) {
+              const vulnCount = pipAudit.dependencies.reduce((sum, dep) => sum + (dep.vulns || []).length, 0);
+              if (vulnCount > 0) {
+                issuesFound.push(`**pip-audit:** ${vulnCount} vulnerabilidade(s) adicionais`);
+              }
+            }
+          } catch (e) {
+            console.log('Erro ao processar pip-audit:', e.message);
+          }
           
           if (issuesFound.length > 0) {
             const { data: issues } = await github.rest.issues.listForRepo({
@@ -114,17 +347,75 @@ jobs:
             });
             
             if (issues.length === 0) {
+              const body = '## 🔒 Análise de Segurança - Vulnerabilidades Detectadas\n\n' +
+                '> ⚠️ **ATENÇÃO:** Vulnerabilidades de segurança foram encontradas durante a análise da tag/release.\n\n' +
+                '### 📊 Resumo\n\n' +
+                issuesFound.map(i => `- ${i}`).join('\n') + '\n\n' +
+                '### 📋 Detalhes das Vulnerabilidades\n\n' +
+                detailedInfo.join('\n') + '\n\n' +
+                '### 🔗 Informações do Workflow\n\n' +
+                `- **Tag:** \`${{ github.ref_name }}\`\n` +
+                `- **Commit:** \`${{ github.sha }}\`\n` +
+                `- **Workflow Run:** [Ver detalhes](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n` +
+                `- **Relatórios completos:** Disponíveis nos artifacts do workflow\n\n` +
+                '### ✅ Ações Recomendadas - Passo a Passo\n\n' +
+                '#### 1️⃣ Análise Inicial\n' +
+                '```bash\n' +
+                '# Baixe os relatórios completos dos artifacts do workflow\n' +
+                '# Links disponíveis acima em "Informações do Workflow"\n' +
+                '```\n\n' +
+                '#### 2️⃣ Correção de Vulnerabilidades em Dependências\n' +
+                '```bash\n' +
+                '# Liste as dependências desatualizadas\n' +
+                'pip list --outdated\n\n' +
+                '# Atualize pacotes específicos (veja detalhes acima)\n' +
+                'pip install --upgrade <pacote>>=<versao-segura>\n\n' +
+                '# Atualize requirements.txt\n' +
+                'pip freeze > requirements.txt\n\n' +
+                '# Teste a aplicação\n' +
+                'pytest\n' +
+                '```\n\n' +
+                '#### 3️⃣ Correção de Problemas no Código\n' +
+                '```bash\n' +
+                '# Execute o Bandit localmente para verificar\n' +
+                'pip install bandit\n' +
+                'bandit -r . -f screen\n\n' +
+                '# Corrija os problemas identificados (veja soluções acima)\n' +
+                '# Execute novamente para validar\n' +
+                'bandit -r . -ll  # Apenas HIGH e MEDIUM\n' +
+                '```\n\n' +
+                '#### 4️⃣ Validação das Correções\n' +
+                '```bash\n' +
+                '# Execute testes de segurança localmente\n' +
+                'pip install safety bandit pip-audit\n\n' +
+                '# Verifique dependências\n' +
+                'safety check\n' +
+                'pip-audit\n\n' +
+                '# Verifique código\n' +
+                'bandit -r . -ll\n' +
+                '```\n\n' +
+                '#### 5️⃣ Commit e Nova Tag\n' +
+                '```bash\n' +
+                '# Faça commit das correções\n' +
+                'git add .\n' +
+                'git commit -m "fix: corrige vulnerabilidades de segurança"\n' +
+                'git push origin main\n\n' +
+                '# Crie nova tag após validação\n' +
+                'git tag v<nova-versao>\n' +
+                'git push origin v<nova-versao>\n' +
+                '```\n\n' +
+                '### 📚 Recursos\n\n' +
+                '- [OWASP Top 10](https://owasp.org/www-project-top-ten/)\n' +
+                '- [Python Security Best Practices](https://python.readthedocs.io/en/stable/library/security_warnings.html)\n' +
+                '- [Bandit Documentation](https://bandit.readthedocs.io/)\n' +
+                '- [Safety DB](https://github.com/pyupio/safety-db)\n\n' +
+                '_Issue criada automaticamente pelo workflow de segurança._';
+              
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                title: '🔒 Vulnerabilidades de Segurança Detectadas',
-                body: '## Análise de Segurança - Problemas Encontrados\n\n' +
-                  '**Tag:** ${{ github.ref_name }}\n' +
-                  '**Commit:** ${{ github.sha }}\n' +
-                  '**Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\n' +
-                  '### Problemas Detectados:\n' +
-                  issuesFound.join('\n') + '\n\n' +
-                  'Por favor, revise os relatórios de segurança e corrija as vulnerabilidades identificadas.',
+                title: `🔒 Vulnerabilidades de Segurança - Tag ${{ github.ref_name }}`,
+                body: body,
                 labels: ['security-vulnerability', 'priority-critical']
               });
             }
