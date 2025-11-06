@@ -3,6 +3,74 @@
 
 **Release Date:** 2025-11-04
 
+# Release Notes - v1.0.0
+
+**Release Date:** 2025-11-06
+
+**Full Changelog:** [`v0.9.0...v1.0.0`](https://github.com/magacho/mcp-git-server/compare/v0.9.0...v1.0.0)
+
+## ✨ New Features
+
+- feat: melhora detalhamento de issues de segurança (bad0549)
+- feat: reestruturação completa dos workflows (0d22213)
+- feat: complete auto-test workflow with auto-merge and issue closure (f9d5165)
+- feat: enable automatic PR creation in auto-test workflow (d4120ad)
+- feat: add intelligent auto-test generation agent (8595905)
+- feat: add automated test coverage analysis and suggestions (4d90a83)
+
+## 🐛 Bug Fixes
+
+- fix: adiciona validação de testes no workflow de release (2981476)
+- fix: corrige detecção de vulnerabilidades no workflow (46adaf7)
+- fix: correct auto-generated test failures (9e77a7b)
+- fix: remove invalid imports from test_main_auto.py (b5db058)
+- fix: garante fechamento automático de issues ao mergear PR gerado pelo agente de testes (437ffb0)
+- fix: correct function names and improve post-merge coverage analysis (a7dd3ee)
+- fix: handle no-changes case in auto-test workflow (244fb6c)
+- fix: correct YAML syntax in auto-generate-tests workflow (6bf0b66)
+- fix: change workflow to push branch instead of creating PR (04ec36b)
+- fix: add workflow permissions for issues and PRs (32d5a18)
+- fix: update actions/upload-artifact from v3 to v4 (d8d14d5)
+
+## 📚 Documentation
+
+- docs: update CHANGELOG for v0.0.2-test (7458ce4)
+- docs: update CHANGELOG for v0.0.1-test (6fa139c)
+- docs: add coverage strategy with 70% target (4729def)
+- docs: add testing guide and local execution script for auto-test agent (33c4812)
+- docs: update CHANGELOG for v0.9.0 (e519255)
+
+## 🔧 Other Changes
+
+- Increase test coverage from 44% to 91% (#16) (3c4ab35)
+- chore: add sensitive files to .gitignore (ddc91bc)
+- Alteração do Nome do Workflow do Actions (a83497c)
+- test: auto-generate tests to improve coverage (#11) (22a4f3b)
+- test: auto-generate tests to improve coverage (#10) (90e8729)
+- chore: remove auto-generated tests for fresh iteration (5da1191)
+- test: iteration 2 - auto-generate tests to improve coverage (#2) (4b0d76c)
+
+## 🚀 Installation
+
+### Docker (Recommended)
+
+```bash
+# Modo gratuito (embeddings locais)
+ docker run -p 8000:8000 \
+   -e REPO_URL="https://github.com/seu-usuario/seu-repo.git" \
+   -v ./data:/app/chroma_db \
+   flaviomagacho/mcp-git-server:v1.0.0
+```
+
+## 📊 Summary
+
+- **Total commits:** 29
+- **Contributors:** @magacho
+
+
+---
+
+
 # Release Notes - v0.0.2-test
 
 **Release Date:** 2025-11-06
