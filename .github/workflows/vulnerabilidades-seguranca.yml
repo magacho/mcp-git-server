@@ -62,13 +62,14 @@ jobs:
     - name: Evaluate security results
       id: evaluate
       run: |
-        HAS_ISSUES=false
+        HAS_ISSUES="false"
         
         if [ -f bandit-report.json ]; then
           BANDIT_ISSUES=$(python -c "import json; data=json.load(open('bandit-report.json')); print(len([r for r in data.get('results', []) if r.get('issue_severity') in ['HIGH', 'MEDIUM']]))")
           echo "Bandit encontrou $BANDIT_ISSUES problemas"
           if [ "$BANDIT_ISSUES" -gt "0" ]; then
-            HAS_ISSUES=true
+            HAS_ISSUES="true"
+            echo "⚠️ Problemas de segurança detectados no código!"
           fi
         fi
         
@@ -76,11 +77,13 @@ jobs:
           SAFETY_ISSUES=$(python -c "import json; data=json.load(open('safety-report.json')); print(len(data.get('vulnerabilities', [])))" 2>/dev/null || echo "0")
           echo "Safety encontrou $SAFETY_ISSUES vulnerabilidades"
           if [ "$SAFETY_ISSUES" -gt "0" ]; then
-            HAS_ISSUES=true
+            HAS_ISSUES="true"
+            echo "⚠️ Vulnerabilidades detectadas em dependências!"
           fi
         fi
         
         echo "has_issues=$HAS_ISSUES" >> $GITHUB_OUTPUT
+        echo "📊 Status final: has_issues=$HAS_ISSUES"
     
     - name: Create security issue
       if: steps.evaluate.outputs.has_issues == 'true'
