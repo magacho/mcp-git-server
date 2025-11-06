@@ -1,0 +1,151 @@
+name: Cobertura de Testes
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  coverage:
+    name: Análise de Cobertura
+    runs-on: ubuntu-latest
+    
+    outputs:
+      coverage_pct: ${{ steps.coverage.outputs.coverage_pct }}
+      coverage_failed: ${{ steps.check_coverage.outcome == 'failure' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    
+    - name: Run tests with coverage
+      env:
+        REPO_URL: https://github.com/octocat/Hello-World.git
+        REPO_BRANCH: master
+        EMBEDDING_PROVIDER: sentence-transformers
+      run: |
+        pytest tests/ -v --cov=. --cov-report=term --cov-report=xml --cov-report=html --cov-report=json
+    
+    - name: Generate coverage report
+      id: coverage
+      run: |
+        COVERAGE_PCT=$(python -c "import json; data=json.load(open('coverage.json')); print(f\"{data['totals']['percent_covered']:.2f}\")")
+        echo "coverage_pct=$COVERAGE_PCT" >> $GITHUB_OUTPUT
+        echo "📊 Cobertura: $COVERAGE_PCT%"
+    
+    - name: Check coverage threshold
+      id: check_coverage
+      run: |
+        COVERAGE=${{ steps.coverage.outputs.coverage_pct }}
+        echo "Cobertura atual: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 60" | bc -l) )); then
+          echo "❌ Cobertura abaixo de 60%"
+          exit 1
+        fi
+        echo "✅ Cobertura acima de 60%"
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        fail_ci_if_error: false
+    
+    - name: Archive coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: |
+          htmlcov/
+          coverage.xml
+          coverage.json
+    
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const coverage = '${{ steps.coverage.outputs.coverage_pct }}';
+          const passed = parseFloat(coverage) >= 60;
+          const emoji = passed ? '✅' : '❌';
+          const status = passed ? 'Aprovado' : 'Abaixo do mínimo';
+          
+          const body = '## ' + emoji + ' Relatório de Cobertura de Testes\n\n' +
+            '**Cobertura:** ' + coverage + '%\n' +
+            '**Status:** ' + status + '\n' +
+            '**Mínimo Requerido:** 60%\n\n' +
+            (passed ? '✅ A cobertura está dentro do esperado!' : '⚠️ A cobertura está abaixo de 60%. Por favor, adicione mais testes.') + '\n\n' +
+            '[Ver relatório completo](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})';
+          
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('Relatório de Cobertura de Testes')
+          );
+          
+          if (botComment) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: body
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+          }
+    
+    - name: Create issue for low coverage
+      if: failure() && steps.check_coverage.outcome == 'failure' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { data: issues } = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            state: 'open',
+            labels: 'test-coverage'
+          });
+          
+          if (issues.length === 0) {
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔴 Cobertura de Testes Abaixo de 60%',
+              body: '## Cobertura de Testes Abaixo do Mínimo\n\n' +
+                '**Cobertura Atual:** ${{ steps.coverage.outputs.coverage_pct }}%\n' +
+                '**Mínimo Requerido:** 60%\n' +
+                '**Commit:** ${{ github.sha }}\n' +
+                '**Branch:** ${{ github.ref_name }}\n' +
+                '**Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\n' +
+                'A cobertura de testes está abaixo do mínimo aceitável. Por favor, adicione mais testes para cobrir o código.',
+              labels: ['test-coverage', 'tech-debt', 'priority-high']
+            });
+          }

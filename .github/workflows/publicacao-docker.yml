@@ -1,0 +1,107 @@
+name: Publicacao da Imagem Docker
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-prerequisites:
+    name: Verificar Pré-requisitos
+    runs-on: ubuntu-latest
+    outputs:
+      can_proceed: ${{ steps.check.outputs.can_proceed }}
+    
+    steps:
+    - name: Check if tests and coverage passed
+      id: check
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const workflows = ['Testes Automaticos', 'Cobertura de Testes'];
+          let allPassed = true;
+          
+          for (const workflowName of workflows) {
+            try {
+              const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                event: 'push',
+                status: 'completed',
+                per_page: 10
+              });
+              
+              const workflowRuns = runs.workflow_runs.filter(run => 
+                run.name === workflowName && 
+                run.head_sha === context.sha
+              );
+              
+              if (workflowRuns.length > 0) {
+                const latestRun = workflowRuns[0];
+                if (latestRun.conclusion !== 'success') {
+                  console.log(`${workflowName} falhou ou não foi concluído com sucesso`);
+                  allPassed = false;
+                }
+              }
+            } catch (error) {
+              console.log(`Erro ao verificar ${workflowName}: ${error.message}`);
+            }
+          }
+          
+          core.setOutput('can_proceed', allPassed ? 'true' : 'false');
+          
+          if (!allPassed) {
+            core.setFailed('Testes ou cobertura falharam. Publicação do Docker cancelada.');
+          }
+  
+  build-and-push:
+    name: Build e Push Docker
+    needs: check-prerequisites
+    if: needs.check-prerequisites.outputs.can_proceed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: flaviomagacho/mcp-git-server
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=registry,ref=flaviomagacho/mcp-git-server:buildcache
+        cache-to: type=registry,ref=flaviomagacho/mcp-git-server:buildcache,mode=max
+    
+    - name: Update Docker Hub description
+      uses: peter-evans/dockerhub-description@v4
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        repository: flaviomagacho/mcp-git-server
+        readme-filepath: ./README.md
