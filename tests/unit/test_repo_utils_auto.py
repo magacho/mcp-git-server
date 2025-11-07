@@ -9,6 +9,7 @@ from repo_utils import detect_git_provider
 from repo_utils import get_git_credentials
 from unittest.mock import Mock, patch, MagicMock, mock_open
 import pytest
+import tempfile
 
 
 
@@ -17,11 +18,10 @@ def test_clone_repo_success():
     # Arrange
     repo_url = "https://github.com/test/repo.git"
     repo_branch = "main"
-    local_path = "/tmp/test_repo_mock"
-    
-    # Act & Assert - Skip actual test as it requires network and valid repo
-    # This test is marked as TODO for proper implementation with mocks
-    pass  # TODO: Implement with proper mocking of subprocess and git commands
+    with tempfile.TemporaryDirectory() as local_path:
+        # Act & Assert - Skip actual test as it requires network and valid repo
+        # This test is marked as TODO for proper implementation with mocks
+        pass  # TODO: Implement with proper mocking of subprocess and git commands
 
 
 def test_clone_repo_edge_cases():

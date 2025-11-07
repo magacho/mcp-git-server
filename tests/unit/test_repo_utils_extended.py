@@ -3,6 +3,7 @@ Additional tests for repo_utils.py to increase coverage
 """
 import os
 import pytest
+import tempfile
 from unittest.mock import patch, MagicMock, call
 from repo_utils import (
     detect_git_provider,
@@ -157,11 +158,12 @@ class TestCloneRepo:
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
         with patch.dict(os.environ, {}, clear=True):
-            clone_repo(
-                "https://github.com/user/repo.git",
-                "main",
-                "/tmp/repo"
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                clone_repo(
+                    "https://github.com/user/repo.git",
+                    "main",
+                    tmpdir
+                )
         
         assert mock_popen.called
     
@@ -176,12 +178,13 @@ class TestCloneRepo:
         mock_popen.return_value.__enter__ = MagicMock(return_value=mock_process)
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
-        clone_repo(
-            "https://github.com/user/repo.git",
-            "main",
-            "/tmp/repo",
-            github_token="ghp_test123"
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            clone_repo(
+                "https://github.com/user/repo.git",
+                "main",
+                tmpdir,
+                github_token="ghp_test123"
+            )
         
         # Should use the provided token
         call_args = mock_popen.call_args
@@ -200,11 +203,12 @@ class TestCloneRepo:
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
         with patch.dict(os.environ, {"GITHUB_TOKEN": "ghp_env123"}):
-            clone_repo(
-                "https://github.com/user/repo.git",
-                "main",
-                "/tmp/repo"
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                clone_repo(
+                    "https://github.com/user/repo.git",
+                    "main",
+                    tmpdir
+                )
         
         call_args = mock_popen.call_args
         git_command = call_args[0][0]
@@ -215,12 +219,13 @@ class TestCloneRepo:
         """Test that clone is skipped if directory exists"""
         mock_exists.return_value = True
         
-        # Should return early without cloning
-        clone_repo(
-            "https://github.com/user/repo.git",
-            "main",
-            "/tmp/repo"
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Should return early without cloning
+            clone_repo(
+                "https://github.com/user/repo.git",
+                "main",
+                tmpdir
+            )
         
         # Should only check existence
         assert mock_exists.called
@@ -236,12 +241,13 @@ class TestCloneRepo:
         mock_popen.return_value.__enter__ = MagicMock(return_value=mock_process)
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
-        clone_repo(
-            "https://github.com/user/repo.git",
-            "main",
-            "/tmp/repo",
-            depth=5
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            clone_repo(
+                "https://github.com/user/repo.git",
+                "main",
+                tmpdir,
+                depth=5
+            )
         
         call_args = mock_popen.call_args
         git_command = call_args[0][0]
@@ -259,11 +265,12 @@ class TestCloneRepo:
         mock_popen.return_value.__enter__ = MagicMock(return_value=mock_process)
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
-        clone_repo(
-            "git@github.com:user/repo.git",
-            "main",
-            "/tmp/repo"
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            clone_repo(
+                "git@github.com:user/repo.git",
+                "main",
+                tmpdir
+            )
         
         assert mock_popen.called
     
@@ -279,11 +286,12 @@ class TestCloneRepo:
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
         with pytest.raises(Exception) as exc_info:
-            clone_repo(
-                "https://github.com/user/repo.git",
-                "main",
-                "/tmp/repo"
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                clone_repo(
+                    "https://github.com/user/repo.git",
+                    "main",
+                    tmpdir
+                )
         
         assert "Failed to clone" in str(exc_info.value)
         assert "GITHUB" in str(exc_info.value)
@@ -300,11 +308,12 @@ class TestCloneRepo:
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
         with pytest.raises(Exception) as exc_info:
-            clone_repo(
-                "https://bitbucket.org/user/repo.git",
-                "main",
-                "/tmp/repo"
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                clone_repo(
+                    "https://bitbucket.org/user/repo.git",
+                    "main",
+                    tmpdir
+                )
         
         assert "Failed to clone" in str(exc_info.value)
         assert "BITBUCKET" in str(exc_info.value)
@@ -322,11 +331,12 @@ class TestCloneRepo:
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
         with pytest.raises(Exception) as exc_info:
-            clone_repo(
-                "https://gitlab.com/user/repo.git",
-                "main",
-                "/tmp/repo"
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                clone_repo(
+                    "https://gitlab.com/user/repo.git",
+                    "main",
+                    tmpdir
+                )
         
         assert "Failed to clone" in str(exc_info.value)
         assert "GITLAB" in str(exc_info.value)
@@ -343,11 +353,12 @@ class TestCloneRepo:
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
         with pytest.raises(Exception) as exc_info:
-            clone_repo(
-                "https://custom.git.com/user/repo.git",
-                "main",
-                "/tmp/repo"
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                clone_repo(
+                    "https://custom.git.com/user/repo.git",
+                    "main",
+                    tmpdir
+                )
         
         assert "Failed to clone" in str(exc_info.value)
     
@@ -359,11 +370,12 @@ class TestCloneRepo:
         mock_popen.side_effect = FileNotFoundError("git not found")
         
         with pytest.raises(Exception):
-            clone_repo(
-                "https://github.com/user/repo.git",
-                "main",
-                "/tmp/repo"
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                clone_repo(
+                    "https://github.com/user/repo.git",
+                    "main",
+                    tmpdir
+                )
     
     @patch('repo_utils.subprocess.Popen')
     @patch('repo_utils.os.path.exists')
@@ -380,11 +392,12 @@ class TestCloneRepo:
             "BITBUCKET_USERNAME": "testuser",
             "BITBUCKET_APP_PASSWORD": "testpass"
         }):
-            clone_repo(
-                "https://bitbucket.org/user/repo.git",
-                "main",
-                "/tmp/repo"
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                clone_repo(
+                    "https://bitbucket.org/user/repo.git",
+                    "main",
+                    tmpdir
+                )
         
         call_args = mock_popen.call_args
         git_command = call_args[0][0]
@@ -402,11 +415,12 @@ class TestCloneRepo:
         mock_popen.return_value.__enter__ = MagicMock(return_value=mock_process)
         mock_popen.return_value.__exit__ = MagicMock(return_value=False)
         
-        clone_repo(
-            "https://github.com/user/repo.git",
-            "main",
-            "/tmp/repo"
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            clone_repo(
+                "https://github.com/user/repo.git",
+                "main",
+                tmpdir
+            )
         
         # Should process stderr lines
         assert mock_process.wait.called
