@@ -17,6 +17,11 @@ WORKDIR /app
 RUN useradd --create-home --shell /bin/bash --uid 1000 app \
     && chown -R app:app /app
 
+RUN mkdir -p /home/app/.ssh \
+      && chmod 700 /home/app/.ssh \
+      && chown app:app /home/app/.ssh
+
+
 # Copiar requirements primeiro para cache
 COPY requirements.txt ./
 

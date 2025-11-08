@@ -1,4 +1,4 @@
-def generate_extension_report(extensoes_processadas, extensoes_descartadas):
+def generate_extensions_report(extensoes_processadas, extensoes_descartadas):
     print("\n===== FILE EXTENSION REPORT =====")
     print("Processed:")
     if extensoes_processadas:
@@ -15,7 +15,7 @@ def generate_extension_report(extensoes_processadas, extensoes_descartadas):
         print("  No files discarded.")
     print("=============================================\n")
 
-def generate_token_report(total_tokens_gerados):
+def generate_tokens_report(total_tokens_gerados):
     print(f"===== TOKEN REPORT =====")
     print(f"Total estimated tokens sent for embeddings: {total_tokens_gerados}")
     print("="*40)
