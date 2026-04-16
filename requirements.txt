@@ -3,12 +3,12 @@ fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 
 # LangChain ecosystem - versões compatíveis
-langchain>=0.1.0,<0.2.0
-langchain-openai>=0.1.0,<0.2.0
-langchain-community>=0.0.20,<0.1.0
-langchain-text-splitters>=0.0.1,<0.1.0
-langchain-chroma>=0.1.0,<0.2.0
-langchain-core>=0.1.0,<0.2.0
+langchain>=0.3.27
+langchain-openai>=0.3.35
+langchain-community>=0.3.27
+langchain-text-splitters>=0.3.9
+langchain-chroma>=0.2.6
+langchain-core>=0.3.84
 
 # Utilities
 GitPython>=3.1.40
@@ -23,7 +23,7 @@ psutil>=5.9.0
 
 # Embeddings locais (torch instalado separadamente para CPU)
 sentence-transformers>=2.2.0
-transformers>=4.30.0
+transformers>=5.0.0rc3
 langchain-huggingface>=0.0.1
 
 # Logging estruturado
